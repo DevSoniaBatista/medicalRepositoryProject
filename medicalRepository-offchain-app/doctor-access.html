@@ -6,6 +6,20 @@
     <title>Acesso Médico - Visualizar Registros</title>
     <link rel="icon" type="image/png" href="images/favicon.png" />
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      // Configuração para produção (Vercel)
+      (function() {
+        const isProduction = window.location.hostname !== 'localhost' && 
+                           window.location.hostname !== '127.0.0.1';
+        if (isProduction) {
+          window.__CONTRACT_ADDRESS__ = window.__CONTRACT_ADDRESS__ || '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053';
+          window.__CHAIN_ID__ = window.__CHAIN_ID__ || 11155111;
+          window.__NETWORK_NAME__ = window.__NETWORK_NAME__ || 'Sepolia';
+          window.__RPC_URL__ = window.__RPC_URL__ || 'https://rpc.sepolia.org';
+          window.__BLOCK_EXPLORER_URL__ = window.__BLOCK_EXPLORER_URL__ || 'https://sepolia.etherscan.io';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="wallet-top-bar" class="wallet-top-bar hidden">

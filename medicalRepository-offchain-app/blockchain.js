@@ -22,10 +22,46 @@ let EIP712_DOMAIN = {
   verifyingContract: null
 };
 
-// Carregar configuração do backend
+// Obter URL do backend baseado no ambiente
+function getBackendUrl() {
+  // Se houver variável de ambiente definida (Vercel injeta no build)
+  if (typeof window !== 'undefined' && window.ENV && window.ENV.API_URL) {
+    return window.ENV.API_URL;
+  }
+  
+  // Tentar variável de ambiente do navegador (definida via script tag)
+  if (typeof window !== 'undefined' && window.__API_URL__) {
+    return window.__API_URL__;
+  }
+  
+  // Detectar ambiente baseado na URL atual
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  
+  // Se estiver em localhost, usar localhost
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://127.0.0.1:3000';
+  }
+  
+  // Em produção (Vercel), tentar usar a mesma origem ou URL configurada
+  // Se o backend estiver na mesma origem, usar caminho relativo
+  const apiUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  
+  // Se houver variável de ambiente VITE_API_URL ou similar
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Fallback: tentar usar a mesma origem (assumindo que o backend está no mesmo domínio)
+  return apiUrl || 'http://127.0.0.1:3000';
+}
+
+// Carregar configuração do backend ou usar variáveis de ambiente
 async function loadConfig() {
+  // Primeiro, tentar carregar do backend
+  const backendUrl = getBackendUrl();
+  
   try {
-    const response = await fetch('http://127.0.0.1:3000/config');
+    const response = await fetch(`${backendUrl}/config`);
     if (response.ok) {
       const config = await response.json();
       CONTRACT_ADDRESS = config.contractAddress;
@@ -57,9 +93,43 @@ async function loadConfig() {
       return true;
     }
   } catch (error) {
-    console.warn('Não foi possível carregar configuração do backend:', error);
-    return false;
+    console.warn('Não foi possível carregar configuração do backend, tentando variáveis de ambiente:', error);
   }
+  
+  // Se falhar, tentar usar variáveis de ambiente do window (injetadas no HTML)
+  if (typeof window !== 'undefined') {
+    const envContract = window.__CONTRACT_ADDRESS__ || window.ENV?.CONTRACT_ADDRESS;
+    const envChainId = window.__CHAIN_ID__ || window.ENV?.CHAIN_ID;
+    const envNetworkName = window.__NETWORK_NAME__ || window.ENV?.NETWORK_NAME;
+    
+    if (envContract && envChainId) {
+      CONTRACT_ADDRESS = envContract;
+      CHAIN_ID = BigInt(envChainId);
+      NETWORK_NAME = envNetworkName || 'Sepolia';
+      
+      const chainIdHex = '0x' + envChainId.toString(16);
+      const defaultRpc = window.__RPC_URL__ || window.ENV?.RPC_URL || (envChainId === 11155111 ? 'https://rpc.sepolia.org' : 'https://rpc.ethereum.org');
+      const defaultExplorer = window.__BLOCK_EXPLORER_URL__ || window.ENV?.BLOCK_EXPLORER_URL || (envChainId === 11155111 ? 'https://sepolia.etherscan.io' : 'https://etherscan.io');
+      
+      NETWORK_CONFIG = {
+        chainId: chainIdHex,
+        chainName: NETWORK_NAME,
+        nativeCurrency: {
+          name: 'Ether',
+          symbol: 'ETH',
+          decimals: 18
+        },
+        rpcUrls: [defaultRpc],
+        blockExplorerUrls: [defaultExplorer]
+      };
+      
+      EIP712_DOMAIN.chainId = Number(envChainId);
+      EIP712_DOMAIN.verifyingContract = CONTRACT_ADDRESS;
+      
+      return true;
+    }
+  }
+  
   return false;
 }
 
@@ -68,7 +138,26 @@ async function ensureConfigLoaded() {
   if (!CONTRACT_ADDRESS || !CHAIN_ID) {
     const loaded = await loadConfig();
     if (!loaded) {
-      throw new Error('Configuração não disponível. Certifique-se de que o servidor backend está rodando e o arquivo .env está configurado.');
+      // Último recurso: usar valores padrão se nada funcionar
+      console.warn('Usando valores padrão de configuração. Configure as variáveis de ambiente ou o backend.');
+      CONTRACT_ADDRESS = '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053';
+      CHAIN_ID = 11155111n;
+      NETWORK_NAME = 'Sepolia';
+      
+      NETWORK_CONFIG = {
+        chainId: '0xaa36a7',
+        chainName: 'Sepolia',
+        nativeCurrency: {
+          name: 'Ether',
+          symbol: 'ETH',
+          decimals: 18
+        },
+        rpcUrls: ['https://rpc.sepolia.org'],
+        blockExplorerUrls: ['https://sepolia.etherscan.io']
+      };
+      
+      EIP712_DOMAIN.chainId = 11155111;
+      EIP712_DOMAIN.verifyingContract = CONTRACT_ADDRESS;
     }
   }
 }
