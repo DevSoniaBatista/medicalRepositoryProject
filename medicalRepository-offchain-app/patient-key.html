@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerar Chave de Acesso - Paciente</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="wallet-top-bar" class="wallet-top-bar hidden">
+      <span class="wallet-address">
+        <span class="wallet-address-short" id="wallet-address-short"></span>
+        <span class="wallet-address-full" id="wallet-address-full"></span>
+      </span>
+      <button id="disconnect-wallet-top" class="disconnect-btn-top">Desconectar</button>
+    </div>
+    <main class="container">
+      <header>
+        <h1>Gerar Chave de Acesso</h1>
+        <p>
+          Conecte sua carteira e gere uma chave de acesso para compartilhar com seu médico.
+          A chave permite acesso temporário aos seus registros médicos.
+        </p>
+        <p class="note">
+          <a href="index.html">Voltar para o gerador de metadata</a> |
+          <a href="doctor-access.html">Acesso médico</a>
+        </p>
+      </header>
+
+      <section class="form-section">
+        <div id="wallet-status" class="card">
+          <h3>Status da Carteira</h3>
+          <p id="wallet-info">Não conectado</p>
+          <button id="connect-wallet" class="primary">Conectar MetaMask</button>
+        </div>
+
+        <form id="key-form" class="hidden">
+          <div class="field">
+            <label for="doctor-address">Endereço do Médico (Wallet Address) *</label>
+            <input
+              id="doctor-address"
+              name="doctorAddress"
+              required
+              placeholder="0x..."
+              pattern="^0x[a-fA-F0-9]{40}$"
+            />
+            <p class="note">Endereço da carteira do médico que terá acesso aos seus registros</p>
+          </div>
+
+          <div class="field">
+            <label for="expiry-days">Dias de Validade *</label>
+            <input
+              id="expiry-days"
+              name="expiryDays"
+              type="number"
+              min="1"
+              max="365"
+              value="30"
+              required
+            />
+            <p class="note">Número de dias que a chave permanecerá válida (1-365)</p>
+          </div>
+
+          <div class="field">
+            <label for="record-id">ID do Registro (opcional)</label>
+            <input
+              id="record-id"
+              name="recordId"
+              type="number"
+              placeholder="Deixe vazio para todos os registros"
+            />
+            <p class="note">Deixe vazio para gerar chave de acesso a todos os seus registros</p>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Gerar Chave de Acesso</button>
+            <button type="button" id="load-records" class="secondary">Carregar Meus Registros</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="records-list" class="results hidden">
+        <h2>Meus Registros</h2>
+        <div id="records-container" class="card-list"></div>
+      </section>
+
+      <section id="key-result" class="results hidden">
+        <h2>Chave de Acesso Gerada</h2>
+        <div class="card">
+          <h3>Chave de Acesso</h3>
+          <pre id="access-key"></pre>
+          <div class="card-actions">
+            <button data-copy="access-key" class="primary">Copiar Chave</button>
+            <button id="download-key" class="secondary">Baixar como JSON</button>
+          </div>
+          <p class="note">
+            <strong>Importante:</strong> Compartilhe esta chave apenas com o médico autorizado.
+            A chave expira em <span id="expiry-info"></span>.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Informações da Chave</h3>
+          <pre id="key-details"></pre>
+        </div>
+      </section>
+    </main>
+
+    <template id="toast-template">
+      <div class="toast"></div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <script type="module" src="patient-key.js"></script>
+  </body>
+</html>
+

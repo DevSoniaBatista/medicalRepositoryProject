@@ -1,0 +1,138 @@
+{
+  "domain": {
+    "name": "MedicalRecords",
+    "version": "1",
+    "chainId": 11155111,
+    "verifyingContract": "0x1234567890123456789012345678901234567890"
+  },
+  "primaryType": "Consent",
+  "types": {
+    "EIP712Domain": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "version",
+        "type": "string"
+      },
+      {
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "name": "verifyingContract",
+        "type": "address"
+      }
+    ],
+    "Consent": [
+      {
+        "name": "recordId",
+        "type": "uint256"
+      },
+      {
+        "name": "doctor",
+        "type": "address"
+      },
+      {
+        "name": "expiry",
+        "type": "uint64"
+      },
+      {
+        "name": "nonce",
+        "type": "bytes32"
+      }
+    ]
+  },
+  "message": {
+    "recordId": 1,
+    "doctor": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    "expiry": 1704067200,
+    "nonce": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+  },
+  "signature": {
+    "r": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    "s": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+    "v": 27
+  },
+  "examples": [
+    {
+      "description": "Example 1: Patient grants consent to doctor",
+      "typedData": {
+        "domain": {
+          "name": "MedicalRecords",
+          "version": "1",
+          "chainId": 11155111,
+          "verifyingContract": "0x1234567890123456789012345678901234567890"
+        },
+        "primaryType": "Consent",
+        "types": {
+          "EIP712Domain": [
+            {"name": "name", "type": "string"},
+            {"name": "version", "type": "string"},
+            {"name": "chainId", "type": "uint256"},
+            {"name": "verifyingContract", "type": "address"}
+          ],
+          "Consent": [
+            {"name": "recordId", "type": "uint256"},
+            {"name": "doctor", "type": "address"},
+            {"name": "expiry", "type": "uint64"},
+            {"name": "nonce", "type": "bytes32"}
+          ]
+        },
+        "message": {
+          "recordId": 1,
+          "doctor": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+          "expiry": 1704067200,
+          "nonce": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        }
+      },
+      "signer": "0x1234567890123456789012345678901234567890",
+      "signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefabcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678901b"
+    },
+    {
+      "description": "Example 2: Consent with different expiry",
+      "typedData": {
+        "domain": {
+          "name": "MedicalRecords",
+          "version": "1",
+          "chainId": 1,
+          "verifyingContract": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+        },
+        "primaryType": "Consent",
+        "types": {
+          "EIP712Domain": [
+            {"name": "name", "type": "string"},
+            {"name": "version", "type": "string"},
+            {"name": "chainId", "type": "uint256"},
+            {"name": "verifyingContract", "type": "address"}
+          ],
+          "Consent": [
+            {"name": "recordId", "type": "uint256"},
+            {"name": "doctor", "type": "address"},
+            {"name": "expiry", "type": "uint64"},
+            {"name": "nonce", "type": "bytes32"}
+          ]
+        },
+        "message": {
+          "recordId": 42,
+          "doctor": "0x9876543210987654321098765432109876543210",
+          "expiry": 1735689600,
+          "nonce": "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
+        }
+      },
+      "signer": "0x1234567890123456789012345678901234567890",
+      "signature": "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678901c"
+    }
+  ],
+  "signingInstructions": {
+    "ethers.js": "const signature = await signer._signTypedData(domain, types, message);",
+    "web3.js": "const signature = await web3.eth.accounts.signTypedData(signer, typedData);",
+    "metamask": "await ethereum.request({ method: 'eth_signTypedData_v4', params: [signer, JSON.stringify(typedData)] });"
+  },
+  "verification": {
+    "solidity": "ECDSA.recover(_hashTypedDataV4(structHash), signature) == patient",
+    "javascript": "const recovered = ethers.utils.verifyTypedData(domain, types, message, signature);"
+  }
+}
+

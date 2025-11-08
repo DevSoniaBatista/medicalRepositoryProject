@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Acesso Paciente - Medical Records</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="wallet-top-bar" class="wallet-top-bar hidden">
+      <span class="wallet-address">
+        <span class="wallet-address-short" id="wallet-address-short"></span>
+        <span class="wallet-address-full" id="wallet-address-full"></span>
+      </span>
+      <button id="disconnect-wallet-top" class="disconnect-btn-top">Desconectar</button>
+    </div>
+    <main class="container">
+      <header>
+        <h1>Acesso Paciente</h1>
+        <p>
+          Gerencie seus registros médicos: crie novos exames, visualize histórico e compartilhe acesso com médicos.
+        </p>
+        <p class="note">
+          <a href="index.html">Voltar ao início</a>
+        </p>
+      </header>
+
+      <section id="wallet-status" class="form-section">
+        <div class="card">
+          <h3>Status da Carteira</h3>
+          <p id="wallet-info">Não conectado</p>
+          <button id="connect-wallet" class="primary">Conectar MetaMask</button>
+        </div>
+      </section>
+
+      <section id="patient-menu" class="results hidden">
+        <div class="card">
+          <h3>Menu do Paciente</h3>
+          <p id="patient-address" class="note"></p>
+          <div class="actions" style="flex-direction: column; gap: 12px;">
+            <button id="create-exam" class="primary">Criar Novo Exame</button>
+            <button id="view-history" class="primary">Ver Histórico</button>
+            <button id="generate-key" class="primary">Gerar Chave de Acesso</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="create-exam-section" class="form-section hidden">
+        <h2>Criar Novo Exame</h2>
+        <p class="note">
+          <a href="#" id="back-to-menu">← Voltar ao menu</a>
+        </p>
+        
+        <div class="field">
+          <label>Passo 1: Upload de Arquivos (Opcional)</label>
+          <p class="note">Se você já tem os CIDs dos arquivos, pule para o passo 2.</p>
+          <a href="upload.html" target="_blank" class="secondary" style="display: inline-block; padding: 8px 16px; text-decoration: none; border-radius: 8px; background: rgba(38, 255, 230, 0.18); color: var(--accent);">
+            Abrir página de upload
+          </a>
+        </div>
+
+        <form id="exam-form">
+          <div class="field">
+            <label for="examType">Tipo de Exame *</label>
+            <input id="examType" name="examType" required placeholder="ex: blood-test, x-ray" />
+          </div>
+
+          <div class="field">
+            <label for="examDate">Data do Exame *</label>
+            <input id="examDate" name="examDate" type="date" required />
+          </div>
+
+          <div class="field">
+            <label for="files">CIDs de arquivos (um por linha ou separados por vírgula)</label>
+            <textarea id="files" name="files" rows="4" placeholder="Qm123...&#10;Qm456..."></textarea>
+          </div>
+
+          <!-- <div class="field">
+            <label for="notesHash">Notes Hash (opcional)</label>
+            <input id="notesHash" name="notesHash" placeholder="ex: 0x1234..." />
+          </div> -->
+
+          <div class="actions">
+            <button type="submit">Gerar e Registrar Exame</button>
+            <button type="reset" class="secondary">Limpar</button>
+          </div>
+        </form>
+
+        <section id="exam-results" class="results hidden">
+          <h3>Resultado</h3>
+          <div class="card">
+            <h4>Metadata Cifrado</h4>
+            <pre id="encrypted-payload"></pre>
+            <div class="card-actions">
+              <button data-copy="encrypted-payload">Copiar</button>
+            </div>
+          </div>
+          <div class="card" style="border: 2px solid var(--accent);">
+            <h4>🔑 Chave Mestre de Descriptografia</h4>
+            <pre id="sym-key"></pre>
+            <div class="card-actions">
+              <button data-copy="sym-key" class="primary">Copiar Chave</button>
+            </div>
+            <p class="note">
+              <strong>Informação:</strong> Esta é sua chave mestre que descriptografa todos os seus exames.
+              Ela é automaticamente incluída na chave de acesso quando você autoriza um médico.
+            </p>
+            <p class="note">
+              <strong>Importante:</strong> A chave mestre é armazenada localmente no seu navegador e é incluída
+              automaticamente na chave de acesso. Você não precisa compartilhá-la separadamente.
+            </p>
+          </div>
+          <div class="card">
+            <h4>Status do Registro</h4>
+            <p id="record-status" class="note"></p>
+          </div>
+        </section>
+      </section>
+
+      <section id="history-section" class="results hidden">
+        <h2>Histórico de Exames</h2>
+        <p class="note">
+          <a href="#" id="back-to-menu-2">← Voltar ao menu</a>
+        </p>
+        <div id="history-container" class="card-list"></div>
+      </section>
+
+      <section id="key-section" class="form-section hidden">
+        <h2>Gerar Chave de Acesso</h2>
+        <p class="note">
+          <a href="#" id="back-to-menu-3">← Voltar ao menu</a>
+        </p>
+        <form id="key-form">
+          <div class="field">
+            <label for="doctor-address">Endereço do Médico (Wallet Address) *</label>
+            <input
+              id="doctor-address"
+              name="doctorAddress"
+              required
+              placeholder="0x..."
+              pattern="^0x[a-fA-F0-9]{40}$"
+            />
+          </div>
+
+          <div class="field">
+            <label for="expiry-days">Dias de Validade *</label>
+            <input
+              id="expiry-days"
+              name="expiryDays"
+              type="number"
+              min="1"
+              max="365"
+              value="30"
+              required
+            />
+          </div>
+
+          <!-- <div class="field">
+            <label for="record-id">ID do Registro (opcional)</label>
+            <input
+              id="record-id"
+              name="recordId"
+              type="number"
+              placeholder="Deixe vazio para todos os registros"
+            />
+          </div> -->
+
+          <div class="actions">
+            <button type="submit">Gerar Chave de Acesso</button>
+          </div>
+        </form>
+
+        <section id="key-result" class="results hidden">
+          <h3>Chave de Acesso Gerada</h3>
+          <div class="card">
+            <h4>Chave de Acesso</h4>
+            <pre id="access-key"></pre>
+            <div class="card-actions">
+              <button data-copy="access-key" class="primary">Copiar Chave</button>
+            </div>
+          </div>
+          <div class="card">
+            <h4>Informações</h4>
+            <pre id="key-details"></pre>
+            <p class="note">
+              <strong>Importante:</strong> Compartilhe esta chave e a chave de descriptografia com o médico autorizado.
+              A chave expira em <span id="expiry-info"></span>.
+            </p>
+          </div>
+          <div class="card" style="border: 2px solid var(--accent);">
+            <h4>✅ Chave de Acesso Completa</h4>
+            <p class="note">
+              <strong>A chave de acesso já inclui a chave mestre de descriptografia.</strong>
+            </p>
+            <p class="note">
+              O médico só precisa da chave de acesso (base64) que você gerou. Não é necessário compartilhar
+              nenhuma chave adicional. A chave mestre está incluída automaticamente na chave de acesso.
+            </p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <template id="toast-template">
+      <div class="toast"></div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <script type="module" src="patient.js"></script>
+  </body>
+</html>
+

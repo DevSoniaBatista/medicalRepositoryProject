@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Acesso Médico - Visualizar Registros</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="wallet-top-bar" class="wallet-top-bar hidden">
+      <span class="wallet-address">
+        <span class="wallet-address-short" id="wallet-address-short"></span>
+        <span class="wallet-address-full" id="wallet-address-full"></span>
+      </span>
+      <button id="disconnect-wallet-top" class="disconnect-btn-top">Desconectar</button>
+    </div>
+    <main class="container">
+      <header>
+        <h1>Acesso Médico</h1>
+        <p>
+          Cole a chave de acesso fornecida pelo paciente para visualizar seus registros médicos
+          criptografados.
+        </p>
+        <p class="note">
+          <a href="index.html">Voltar ao início</a>
+        </p>
+      </header>
+
+      <section class="form-section">
+        <div id="wallet-status" class="card">
+          <h3>Status da Carteira</h3>
+          <p id="wallet-info">Não conectado</p>
+          <button id="connect-wallet" class="primary">Conectar MetaMask</button>
+        </div>
+
+        <form id="access-form" class="hidden">
+          <div class="field">
+            <label for="access-key">Chave de Acesso *</label>
+            <textarea
+              id="access-key"
+              name="accessKey"
+              rows="6"
+              required
+              placeholder="Cole a chave de acesso fornecida pelo paciente aqui..."
+            ></textarea>
+            <p class="note">Chave de acesso fornecida pelo paciente</p>
+          </div>
+
+
+          <div class="actions">
+            <button type="submit">Acessar Registros</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="access-result" class="results hidden">
+        <h2>Registros Acessíveis</h2>
+        <div id="status-message" class="card"></div>
+        <div id="records-container" class="card-list"></div>
+      </section>
+    </main>
+
+    <template id="toast-template">
+      <div class="toast"></div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <script type="module" src="doctor-access.js"></script>
+  </body>
+</html>
+

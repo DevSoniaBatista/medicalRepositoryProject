@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload de Arquivos Médicos</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="wallet-top-bar" class="wallet-top-bar hidden">
+      <span class="wallet-address">
+        <span class="wallet-address-short" id="wallet-address-short"></span>
+        <span class="wallet-address-full" id="wallet-address-full"></span>
+      </span>
+      <button id="disconnect-wallet-top" class="disconnect-btn-top">Desconectar</button>
+    </div>
+    <main class="container">
+      <header class="hero">
+        <span class="hero-badge">Pinata Bridge</span>
+        <h1>Upload de Arquivos do Exame</h1>
+        <p class="hero-description">
+          Publique imagens e documentos médicos diretamente no IPFS/Pinata, gere hashes comprováveis e migre os CIDs
+          para o formulário de metadata com um clique.
+        </p>
+        <div class="hero-actions">
+          <a href="index.html" class="cta ghost">Voltar para metadata</a>
+        </div>
+      </header>
+
+      <section class="panel form-section">
+        <form id="file-upload-form">
+          <div class="field">
+            <label for="examFiles">Selecione os arquivos do exame (imagens, PDFs, etc.)</label>
+            <input
+              id="examFiles"
+              name="examFiles"
+              type="file"
+              multiple
+              accept="image/*,application/pdf"
+            />
+          </div>
+
+          <p class="note highlight">
+            Os arquivos ficam fora da blockchain: somente o CID é exibido aqui. Certifique-se de que o serviço
+            (`npm run api`) está em execução antes de iniciar o upload.
+          </p>
+
+          <div class="actions">
+            <button type="submit">Enviar arquivos</button>
+            <button type="reset" class="secondary">Limpar seleção</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="upload-results" class="panel results hidden">
+        <h2>Uploads realizados</h2>
+        <p id="upload-feedback" class="status hidden"></p>
+        <div id="results-list" class="card-list"></div>
+        <div class="actions">
+          <button id="copy-cids" class="secondary">Copiar CIDs</button>
+          <button id="send-to-form">Preencher formulário</button>
+        </div>
+      </section>
+    </main>
+
+    <template id="toast-template">
+      <div class="toast"></div>
+    </template>
+
+    <script src="upload.js" type="module"></script>
+  </body>
+</html>
+
+

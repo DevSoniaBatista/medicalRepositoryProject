@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medical Records - Sistema de Registros Médicos</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="wallet-top-bar" class="wallet-top-bar hidden">
+      <span class="wallet-address">
+        <span class="wallet-address-short" id="wallet-address-short"></span>
+        <span class="wallet-address-full" id="wallet-address-full"></span>
+      </span>
+      <button id="disconnect-wallet-top" class="disconnect-btn-top">Desconectar</button>
+    </div>
+    <main class="container">
+      <header>
+        <h1>Medical Records</h1>
+        <p>
+          Sistema descentralizado de registros médicos com criptografia end-to-end e controle de acesso via blockchain.
+        </p>
+      </header>
+
+      <section id="wallet-section" class="form-section">
+        <div class="card">
+          <h3>Conectar Carteira</h3>
+          <p>Conecte sua carteira MetaMask para acessar o sistema</p>
+          <button id="connect-wallet" class="primary">Conectar MetaMask</button>
+          <p id="wallet-info" class="note hidden"></p>
+        </div>
+      </section>
+
+      <section id="main-menu" class="results hidden">
+        <div class="card">
+          <h3>Menu Principal</h3>
+          <p id="connected-address" class="note"></p>
+          <div class="actions" style="flex-direction: column; gap: 12px;">
+            <button id="patient-access" class="primary">Acesso Paciente</button>
+            <button id="doctor-access" class="primary">Acesso Médico</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="toast-template">
+      <div class="toast"></div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <script type="module" src="home.js"></script>
+  </body>
+</html>
