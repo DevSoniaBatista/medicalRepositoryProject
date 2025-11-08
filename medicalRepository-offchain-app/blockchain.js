@@ -57,13 +57,16 @@ function getBackendUrl() {
 
 // Carregar configuração do backend ou usar variáveis de ambiente
 async function loadConfig() {
-  // Primeiro, tentar carregar do backend
+  // Primeiro, tentar carregar do backend (que lê do .env)
   const backendUrl = getBackendUrl();
   
   try {
+    console.log(`[Config] Tentando carregar configuração do backend: ${backendUrl}/config`);
     const response = await fetch(`${backendUrl}/config`);
     if (response.ok) {
       const config = await response.json();
+      console.log('[Config] Configuração carregada do backend:', config);
+      
       CONTRACT_ADDRESS = config.contractAddress;
       CHAIN_ID = BigInt(config.chainId);
       NETWORK_NAME = config.networkName;
@@ -90,10 +93,18 @@ async function loadConfig() {
       EIP712_DOMAIN.chainId = Number(config.chainId);
       EIP712_DOMAIN.verifyingContract = CONTRACT_ADDRESS;
       
+      console.log('[Config] Configuração aplicada:', {
+        contractAddress: CONTRACT_ADDRESS,
+        chainId: CHAIN_ID.toString(),
+        networkName: NETWORK_NAME
+      });
+      
       return true;
+    } else {
+      console.warn(`[Config] Backend retornou status ${response.status}`);
     }
   } catch (error) {
-    console.warn('Não foi possível carregar configuração do backend, tentando variáveis de ambiente:', error);
+    console.warn('[Config] Não foi possível carregar configuração do backend, tentando variáveis de ambiente:', error.message);
   }
   
   // Se falhar, tentar usar variáveis de ambiente do window (injetadas no HTML)
@@ -103,6 +114,7 @@ async function loadConfig() {
     const envNetworkName = window.__NETWORK_NAME__ || window.ENV?.NETWORK_NAME;
     
     if (envContract && envChainId) {
+      console.log('[Config] Usando variáveis de ambiente do window:', { envContract, envChainId, envNetworkName });
       CONTRACT_ADDRESS = envContract;
       CHAIN_ID = BigInt(envChainId);
       NETWORK_NAME = envNetworkName || 'Sepolia';
@@ -130,6 +142,7 @@ async function loadConfig() {
     }
   }
   
+  console.warn('[Config] Nenhuma configuração encontrada. Verifique se o backend está rodando e o .env está configurado.');
   return false;
 }
 
@@ -139,7 +152,14 @@ async function ensureConfigLoaded() {
     const loaded = await loadConfig();
     if (!loaded) {
       // Último recurso: usar valores padrão se nada funcionar
-      console.warn('Usando valores padrão de configuração. Configure as variáveis de ambiente ou o backend.');
+      // AVISO: Isso só deve acontecer se o backend não estiver disponível
+      console.error('[Config] ERRO: Não foi possível carregar configuração do .env!');
+      console.error('[Config] Verifique:');
+      console.error('  1. Se o backend está rodando (npm run api)');
+      console.error('  2. Se o arquivo .env existe e está configurado');
+      console.error('  3. Se as variáveis CONTRACT_ADDRESS, CHAIN_ID, NETWORK_NAME estão definidas');
+      console.error('[Config] Usando valores padrão (Sepolia) como último recurso.');
+      
       CONTRACT_ADDRESS = '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053';
       CHAIN_ID = 11155111n;
       NETWORK_NAME = 'Sepolia';

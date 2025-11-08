@@ -46,10 +46,34 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/config', (_req, res) => {
+  // Ler do .env - NÃO usar valores padrão hardcoded
+  const contractAddress = process.env.CONTRACT_ADDRESS;
+  const chainId = process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID, 10) : null;
+  const networkName = process.env.NETWORK_NAME;
+  
+  // Validar se as variáveis obrigatórias estão configuradas
+  if (!contractAddress || !chainId || !networkName) {
+    console.error('[Backend] ERRO: Variáveis de ambiente não configuradas!');
+    console.error('[Backend] Configure no arquivo .env:');
+    console.error('  CONTRACT_ADDRESS=' + (contractAddress || 'NÃO DEFINIDO'));
+    console.error('  CHAIN_ID=' + (chainId || 'NÃO DEFINIDO'));
+    console.error('  NETWORK_NAME=' + (networkName || 'NÃO DEFINIDO'));
+    
+    return res.status(500).json({
+      error: 'Configuração incompleta',
+      message: 'Configure CONTRACT_ADDRESS, CHAIN_ID e NETWORK_NAME no arquivo .env',
+      missing: {
+        contractAddress: !contractAddress,
+        chainId: !chainId,
+        networkName: !networkName
+      }
+    });
+  }
+  
   const config = {
-    contractAddress: process.env.CONTRACT_ADDRESS || '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053',
-    chainId: parseInt(process.env.CHAIN_ID || '11155111', 10),
-    networkName: process.env.NETWORK_NAME || 'Sepolia'
+    contractAddress: contractAddress,
+    chainId: chainId,
+    networkName: networkName
   };
   
   // Adicionar RPC e Block Explorer se configurados
@@ -60,6 +84,12 @@ app.get('/config', (_req, res) => {
   if (process.env.BLOCK_EXPLORER_URL) {
     config.blockExplorerUrl = process.env.BLOCK_EXPLORER_URL;
   }
+  
+  console.log('[Backend] Configuração retornada do .env:', {
+    contractAddress: config.contractAddress,
+    chainId: config.chainId,
+    networkName: config.networkName
+  });
   
   res.json(config);
 });

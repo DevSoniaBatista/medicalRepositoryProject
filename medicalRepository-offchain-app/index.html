@@ -7,23 +7,8 @@
     <link rel="icon" type="image/png" href="images/favicon.png" />
     <link rel="stylesheet" href="styles.css" />
     <script>
-      // Configuração para produção (Vercel)
-      // Se você configurou variáveis de ambiente na Vercel, elas serão injetadas aqui
-      // Caso contrário, use os valores padrão abaixo ou configure manualmente
-      (function() {
-        // Detectar se está em produção (não localhost)
-        const isProduction = window.location.hostname !== 'localhost' && 
-                           window.location.hostname !== '127.0.0.1';
-        
-        if (isProduction) {
-          // Configuração padrão para produção (pode ser sobrescrita por variáveis de ambiente)
-          window.__CONTRACT_ADDRESS__ = window.__CONTRACT_ADDRESS__ || '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053';
-          window.__CHAIN_ID__ = window.__CHAIN_ID__ || 11155111;
-          window.__NETWORK_NAME__ = window.__NETWORK_NAME__ || 'Sepolia';
-          window.__RPC_URL__ = window.__RPC_URL__ || 'https://rpc.sepolia.org';
-          window.__BLOCK_EXPLORER_URL__ = window.__BLOCK_EXPLORER_URL__ || 'https://sepolia.etherscan.io';
-        }
-      })();
+      // Configuração será carregada do backend via blockchain.js
+      // Não definir valores padrão aqui para forçar o uso do .env
     </script>
   </head>
   <body>
