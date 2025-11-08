@@ -34,7 +34,9 @@ async function checkExistingConnection() {
     if (accounts.length > 0) {
       const provider = new window.ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
-      if (network.chainId === 11155111n) {
+      const { getChainId } = await import('./blockchain.js');
+      const expectedChainId = await getChainId();
+      if (network.chainId === expectedChainId) {
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
         wallet = { provider, signer, address };

@@ -1,20 +1,10 @@
 // ethers.js será carregado via script tag no HTML
 // Usar window.ethers quando disponível
 
-let CONTRACT_ADDRESS = '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053'; // Fallback
-let SEPOLIA_CHAIN_ID = 11155111n;
-
-const SEPOLIA_NETWORK = {
-  chainId: '0xaa36a7', // 11155111 em hex
-  chainName: 'Sepolia',
-  nativeCurrency: {
-    name: 'Ether',
-    symbol: 'ETH',
-    decimals: 18
-  },
-  rpcUrls: ['https://rpc.sepolia.org'],
-  blockExplorerUrls: ['https://sepolia.etherscan.io']
-};
+let CONTRACT_ADDRESS = null;
+let CHAIN_ID = null;
+let NETWORK_NAME = null;
+let NETWORK_CONFIG = null;
 
 const CONTRACT_ABI = [
   'function createRecord(address patient, string calldata cidMeta, bytes32 metaHash) external returns (uint256 recordId)',
@@ -28,8 +18,8 @@ const CONTRACT_ABI = [
 let EIP712_DOMAIN = {
   name: 'MedicalRecords',
   version: '1',
-  chainId: 11155111,
-  verifyingContract: CONTRACT_ADDRESS
+  chainId: null,
+  verifyingContract: null
 };
 
 // Carregar configuração do backend
@@ -39,13 +29,47 @@ async function loadConfig() {
     if (response.ok) {
       const config = await response.json();
       CONTRACT_ADDRESS = config.contractAddress;
-      SEPOLIA_CHAIN_ID = BigInt(config.chainId);
+      CHAIN_ID = BigInt(config.chainId);
+      NETWORK_NAME = config.networkName;
+      
+      // Construir configuração da rede para MetaMask
+      const chainIdHex = '0x' + config.chainId.toString(16);
+      // Usar RPC e explorer padrão baseado no chainId conhecido, ou valores do config se disponíveis
+      const defaultRpc = config.rpcUrl || (config.chainId === 11155111 ? 'https://rpc.sepolia.org' : 'https://rpc.ethereum.org');
+      const defaultExplorer = config.blockExplorerUrl || (config.chainId === 11155111 ? 'https://sepolia.etherscan.io' : 'https://etherscan.io');
+      
+      NETWORK_CONFIG = {
+        chainId: chainIdHex,
+        chainName: NETWORK_NAME,
+        nativeCurrency: {
+          name: 'Ether',
+          symbol: 'ETH',
+          decimals: 18
+        },
+        rpcUrls: [defaultRpc],
+        blockExplorerUrls: [defaultExplorer]
+      };
+      
       // Atualizar EIP712_DOMAIN
-      EIP712_DOMAIN.chainId = config.chainId;
+      EIP712_DOMAIN.chainId = Number(config.chainId);
       EIP712_DOMAIN.verifyingContract = CONTRACT_ADDRESS;
+      
+      return true;
     }
   } catch (error) {
-    console.warn('Não foi possível carregar configuração do backend, usando valores padrão:', error);
+    console.warn('Não foi possível carregar configuração do backend:', error);
+    return false;
+  }
+  return false;
+}
+
+// Função para garantir que a configuração está carregada
+async function ensureConfigLoaded() {
+  if (!CONTRACT_ADDRESS || !CHAIN_ID) {
+    const loaded = await loadConfig();
+    if (!loaded) {
+      throw new Error('Configuração não disponível. Certifique-se de que o servidor backend está rodando e o arquivo .env está configurado.');
+    }
   }
 }
 
@@ -70,31 +94,34 @@ export async function connectWallet() {
     throw new Error('ethers.js não foi carregado. Aguarde alguns segundos e tente novamente.');
   }
 
+  // Garantir que a configuração está carregada
+  await ensureConfigLoaded();
+
   const ethers = window.ethers;
   const provider = new ethers.BrowserProvider(window.ethereum);
   
-  // Verificar e trocar para Sepolia se necessário
+  // Verificar e trocar para a rede configurada se necessário
   try {
     const network = await provider.getNetwork();
-    if (network.chainId !== SEPOLIA_CHAIN_ID) {
+    if (network.chainId !== CHAIN_ID) {
       const shouldSwitch = confirm(
         `Você está na rede ${network.name} (Chain ID: ${network.chainId}).\n` +
-        `O sistema requer Sepolia (Chain ID: ${SEPOLIA_CHAIN_ID}).\n` +
-        `Deseja trocar para Sepolia agora?`
+        `O sistema requer ${NETWORK_NAME} (Chain ID: ${CHAIN_ID}).\n` +
+        `Deseja trocar para ${NETWORK_NAME} agora?`
       );
       
       if (shouldSwitch) {
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: SEPOLIA_NETWORK.chainId }]
+            params: [{ chainId: NETWORK_CONFIG.chainId }]
           });
         } catch (switchError) {
           // Se a rede não existir, adicionar
           if (switchError.code === 4902) {
             await window.ethereum.request({
               method: 'wallet_addEthereumChain',
-              params: [SEPOLIA_NETWORK]
+              params: [NETWORK_CONFIG]
             });
           } else {
             throw switchError;
@@ -103,7 +130,7 @@ export async function connectWallet() {
         // Aguardar um pouco para a troca completar
         await new Promise(resolve => setTimeout(resolve, 1000));
       } else {
-        throw new Error('Por favor, troque para a rede Sepolia na MetaMask.');
+        throw new Error(`Por favor, troque para a rede ${NETWORK_NAME} na MetaMask.`);
       }
     }
   } catch (error) {
@@ -119,19 +146,37 @@ export async function connectWallet() {
 
   // Verificar novamente após conectar
   const finalNetwork = await provider.getNetwork();
-  if (finalNetwork.chainId !== SEPOLIA_CHAIN_ID) {
-    throw new Error(`Rede incorreta. Esperado Sepolia (${SEPOLIA_CHAIN_ID}), mas está em ${finalNetwork.name} (${finalNetwork.chainId})`);
+  if (finalNetwork.chainId !== CHAIN_ID) {
+    throw new Error(`Rede incorreta. Esperado ${NETWORK_NAME} (${CHAIN_ID}), mas está em ${finalNetwork.name} (${finalNetwork.chainId})`);
   }
 
   return { provider, signer: await provider.getSigner(), address: accounts[0] };
 }
 
+// Exportar funções para obter configuração
+export async function getChainId() {
+  await ensureConfigLoaded();
+  return CHAIN_ID;
+}
+
+export async function getContractAddress() {
+  await ensureConfigLoaded();
+  return CONTRACT_ADDRESS;
+}
+
+export async function getNetworkName() {
+  await ensureConfigLoaded();
+  return NETWORK_NAME;
+}
+
 export async function getContract(provider) {
+  await ensureConfigLoaded();
   const ethers = window.ethers;
   return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 }
 
 export async function createRecord(signer, cidMeta, metaHash) {
+  await ensureConfigLoaded();
   const ethers = window.ethers;
   const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
   const address = await signer.getAddress();
@@ -162,6 +207,7 @@ export async function getRecord(provider, recordId) {
 }
 
 export async function generateAccessKey(signer, recordId, doctorAddress, expiryDays = 30) {
+  await ensureConfigLoaded();
   const ethers = window.ethers;
   const expiry = Math.floor(Date.now() / 1000) + (expiryDays * 24 * 60 * 60);
   const nonce = ethers.randomBytes(32);
@@ -186,6 +232,7 @@ export async function generateAccessKey(signer, recordId, doctorAddress, expiryD
 }
 
 export async function grantConsent(signer, recordId, doctorAddress, expiry, nonce, signature) {
+  await ensureConfigLoaded();
   const ethers = window.ethers;
   const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
   

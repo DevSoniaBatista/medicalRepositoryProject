@@ -46,11 +46,22 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/config', (_req, res) => {
-  res.json({
+  const config = {
     contractAddress: process.env.CONTRACT_ADDRESS || '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053',
-    chainId: process.env.CHAIN_ID || 11155111,
+    chainId: parseInt(process.env.CHAIN_ID || '11155111', 10),
     networkName: process.env.NETWORK_NAME || 'Sepolia'
-  });
+  };
+  
+  // Adicionar RPC e Block Explorer se configurados
+  if (process.env.RPC_URL) {
+    config.rpcUrl = process.env.RPC_URL;
+  }
+  
+  if (process.env.BLOCK_EXPLORER_URL) {
+    config.blockExplorerUrl = process.env.BLOCK_EXPLORER_URL;
+  }
+  
+  res.json(config);
 });
 
 if (!process.env.PINATA_JWT && !(process.env.PINATA_API_KEY && process.env.PINATA_SECRET)) {

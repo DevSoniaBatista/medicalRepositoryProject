@@ -41,7 +41,9 @@ async function checkExistingConnection() {
       
       // Verificar rede
       const network = await provider.getNetwork();
-      if (network.chainId === 11155111n) {
+      const { getChainId } = await import('./blockchain.js');
+      const expectedChainId = await getChainId();
+      if (network.chainId === expectedChainId) {
         // Já conectado e na rede correta
         walletInfo.textContent = `Conectado: ${address}`;
         walletInfo.classList.remove('hidden');
