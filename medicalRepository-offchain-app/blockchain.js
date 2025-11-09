@@ -24,7 +24,7 @@ let EIP712_DOMAIN = {
 };
 
 // Obter URL do backend baseado no ambiente
-function getBackendUrl() {
+export function getBackendUrl() {
   // Se houver variável de ambiente definida (Vercel injeta no build)
   if (typeof window !== 'undefined' && window.ENV && window.ENV.API_URL) {
     return window.ENV.API_URL;
@@ -38,22 +38,15 @@ function getBackendUrl() {
   // Detectar ambiente baseado na URL atual
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
-  // Se estiver em localhost, usar localhost
+  // Se estiver em localhost, usar servidor Express local
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://127.0.0.1:3000';
   }
   
-  // Em produção (Vercel), tentar usar a mesma origem ou URL configurada
-  // Se o backend estiver na mesma origem, usar caminho relativo
-  const apiUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  
-  // Se houver variável de ambiente VITE_API_URL ou similar
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  
-  // Fallback: tentar usar a mesma origem (assumindo que o backend está no mesmo domínio)
-  return apiUrl || 'http://127.0.0.1:3000';
+  // Em produção (Vercel), usar API Routes na mesma origem
+  // As serverless functions ficam em /api/* e são servidas na mesma origem
+  // Retornar string vazia para usar caminho relativo
+  return '';
 }
 
 // Carregar configuração do backend ou usar variáveis de ambiente
@@ -61,9 +54,14 @@ async function loadConfig() {
   // Primeiro, tentar carregar do backend (que lê do .env)
   const backendUrl = getBackendUrl();
   
+  // Determinar o endpoint correto
+  // Em localhost: http://127.0.0.1:3000/config
+  // Em Vercel: /api/config (mesma origem)
+  const configEndpoint = backendUrl ? `${backendUrl}/config` : '/api/config';
+  
   try {
-    console.log(`[Config] Tentando carregar configuração do backend: ${backendUrl}/config`);
-    const response = await fetch(`${backendUrl}/config`);
+    console.log(`[Config] Tentando carregar configuração do backend: ${configEndpoint}`);
+    const response = await fetch(configEndpoint);
     if (response.ok) {
       const config = await response.json();
       console.log('[Config] Configuração carregada do backend:', config);

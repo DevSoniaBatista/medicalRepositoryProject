@@ -150,7 +150,11 @@ async function uploadSingleFile(file) {
   const payload = new FormData();
   payload.append('file', file, file.name);
 
-  const response = await fetch('http://127.0.0.1:3000/upload-file', {
+  const { getBackendUrl } = await import('./blockchain.js');
+  const backendUrl = getBackendUrl();
+  const uploadEndpoint = backendUrl ? `${backendUrl}/upload-file` : '/api/upload-file';
+
+  const response = await fetch(uploadEndpoint, {
     method: 'POST',
     body: payload
   });

@@ -238,7 +238,11 @@ examForm.addEventListener('submit', async (event) => {
     showToast('Metadata gerado! Enviando ao Pinata...');
 
     // Upload para Pinata
-    const uploadResponse = await fetch('http://127.0.0.1:3000/upload', {
+    const { getBackendUrl } = await import('./blockchain.js');
+    const backendUrl = getBackendUrl();
+    const uploadEndpoint = backendUrl ? `${backendUrl}/upload` : '/api/upload';
+    
+    const uploadResponse = await fetch(uploadEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
