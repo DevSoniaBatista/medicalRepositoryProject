@@ -5,6 +5,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IMedicalRecords} from "./IMedicalRecords.sol";
@@ -20,6 +21,7 @@ contract MedicalRecords is
     UUPSUpgradeable,
     AccessControlUpgradeable,
     ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
     EIP712Upgradeable
 {
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
@@ -28,15 +30,21 @@ contract MedicalRecords is
             "Consent(uint256 recordId,address doctor,uint64 expiry,bytes32 nonce)"
         );
 
+    // Payment constants
+    uint256 public constant RECORD_CREATION_FEE = 0.0001 ether; // 0.0001 ETH ≈ US$0.43
+
     // Storage variables
     uint256 private _nextRecordId;
+    address private _adminAddress;
+    uint256 private _totalPayments;
     mapping(uint256 => MedicalRecord) private _records;
     mapping(uint256 => mapping(address => mapping(bytes32 => Consent)))
         private _consents;
     mapping(address => mapping(bytes32 => bool)) private _usedNonces;
+    mapping(address => uint256) private _paymentsByPayer; // Total paid by each address
 
     // Storage gap for future upgrades
-    uint256[50] private __gap;
+    uint256[47] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -52,10 +60,12 @@ contract MedicalRecords is
         __UUPSUpgradeable_init();
         __AccessControl_init();
         __ReentrancyGuard_init();
+        __Pausable_init();
         __EIP712_init("MedicalRecords", "1");
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(UPGRADER_ROLE, admin);
+        _adminAddress = admin;
         _nextRecordId = 1;
     }
 
@@ -65,15 +75,21 @@ contract MedicalRecords is
      * @param cidMeta IPFS CID of the encrypted metadata JSON
      * @param metaHash Keccak256 hash of the encrypted metadata JSON
      * @return recordId The ID of the newly created record
+     * @dev Requires payment of RECORD_CREATION_FEE (0.0001 ETH) which is accumulated in the contract
      */
     function createRecord(
         address patient,
         string calldata cidMeta,
         bytes32 metaHash
-    ) external nonReentrant returns (uint256 recordId) {
+    ) external payable whenNotPaused nonReentrant returns (uint256 recordId) {
         if (patient == address(0)) revert("Invalid patient");
         if (bytes(cidMeta).length == 0) revert("Empty CID");
         if (msg.sender != patient) revert("Only patient can create");
+        if (msg.value != RECORD_CREATION_FEE) revert("Incorrect payment amount");
+
+        // Accumulate payment in contract (ETH stays in contract)
+        _totalPayments += msg.value;
+        _paymentsByPayer[patient] += msg.value;
 
         recordId = _nextRecordId++;
         _records[recordId] = MedicalRecord({
@@ -90,6 +106,15 @@ contract MedicalRecords is
             patient,
             cidMeta,
             metaHash,
+            uint64(block.timestamp)
+        );
+
+        emit PaymentReceived(
+            patient,
+            _adminAddress,
+            msg.value,
+            recordId,
+            "record_creation",
             uint64(block.timestamp)
         );
     }
@@ -121,7 +146,7 @@ contract MedicalRecords is
         uint64 expiry,
         bytes32 nonce,
         bytes calldata patientSignature
-    ) external nonReentrant {
+    ) external whenNotPaused nonReentrant {
         MedicalRecord storage record = _records[recordId];
         if (record.owner == address(0)) revert("Record not found");
         if (record.revoked) revert("Record revoked");
@@ -150,6 +175,16 @@ contract MedicalRecords is
         });
 
         emit ConsentGranted(recordId, record.owner, doctor, expiry, nonce);
+        
+        // Emit event for admin tracking - key generation
+        emit ConsentKeyGenerated(
+            recordId,
+            record.owner,
+            doctor,
+            nonce,
+            expiry,
+            uint64(block.timestamp)
+        );
     }
 
     /**
@@ -182,13 +217,15 @@ contract MedicalRecords is
     function logAccess(
         uint256 recordId,
         string calldata action
-    ) external nonReentrant {
-        // Verify that caller has valid, non-revoked consent
-        // Note: This is a simplified check - in practice, you'd need to pass the nonce
-        // or maintain a mapping of active consents per doctor
+    ) external whenNotPaused nonReentrant {
+        MedicalRecord storage record = _records[recordId];
+        if (record.owner == address(0)) revert("Record not found");
+        
+        // Emit access log with patient information for admin tracking
         emit AccessLogged(
             recordId,
             msg.sender,
+            record.owner, // patient address
             uint64(block.timestamp),
             action
         );
@@ -218,6 +255,81 @@ contract MedicalRecords is
         bytes32 nonce
     ) external view returns (Consent memory) {
         return _consents[recordId][doctor][nonce];
+    }
+
+    /**
+     * @notice Get the admin address that receives payments
+     * @return The admin address
+     */
+    function getAdminAddress() external view returns (address) {
+        return _adminAddress;
+    }
+
+    /**
+     * @notice Get the fee required to create a record
+     * @return The fee amount in wei
+     */
+    function getRecordCreationFee() external pure returns (uint256) {
+        return RECORD_CREATION_FEE;
+    }
+
+    /**
+     * @notice Get total payments received by the contract
+     * @return Total amount in wei
+     */
+    function getTotalPayments() external view returns (uint256) {
+        return _totalPayments;
+    }
+
+    /**
+     * @notice Get total payments made by a specific payer
+     * @param payer Address of the payer
+     * @return Total amount paid by this address in wei
+     */
+    function getPaymentsByPayer(address payer) external view returns (uint256) {
+        return _paymentsByPayer[payer];
+    }
+
+    /**
+     * @notice Get the contract's balance (accumulated payments)
+     * @return The contract balance in wei
+     */
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    /**
+     * @notice Withdraw accumulated payments to admin address
+     * @dev Only admin can call this function
+     */
+    function withdraw() external nonReentrant {
+        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+            revert("Only admin can withdraw");
+        }
+
+        uint256 balance = address(this).balance;
+        if (balance == 0) revert("No funds to withdraw");
+
+        (bool success, ) = payable(_adminAddress).call{value: balance}("");
+        if (!success) revert("Withdrawal failed");
+
+        emit PaymentWithdrawn(_adminAddress, balance, uint64(block.timestamp));
+    }
+
+    /**
+     * @notice Pause the contract (emergency stop)
+     * @dev Only admin can pause. Pauses all state-changing functions.
+     */
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the contract
+     * @dev Only admin can unpause. Resumes all state-changing functions.
+     */
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
     }
 
     /**

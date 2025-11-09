@@ -1,4 +1,4 @@
-import { connectWallet, getContractAddress, getNetworkName, getChainId } from './blockchain.js';
+import { connectWallet, getContractAddress, getNetworkName, getChainId, isAdminWallet } from './blockchain.js';
 
 const connectButton = document.getElementById('connect-wallet');
 const walletSection = document.getElementById('wallet-section');
@@ -7,6 +7,7 @@ const mainMenu = document.getElementById('main-menu');
 const connectedAddress = document.getElementById('connected-address');
 const patientAccessBtn = document.getElementById('patient-access');
 const doctorAccessBtn = document.getElementById('doctor-access');
+const adminAccessBtn = document.getElementById('admin-access');
 const walletTopBar = document.getElementById('wallet-top-bar');
 const walletAddressShort = document.getElementById('wallet-address-short');
 const walletAddressFull = document.getElementById('wallet-address-full');
@@ -57,6 +58,10 @@ async function checkExistingConnection() {
         connectButton.textContent = 'Conectado';
         updateWalletTopBar(address);
         localStorage.setItem('walletAddress', address);
+        
+        // Verificar se é admin e mostrar botão
+        await checkAndShowAdminButton(address);
+        
         return true;
       }
     }
@@ -226,6 +231,9 @@ connectButton.addEventListener('click', async () => {
     showToast('Carteira conectada!');
     
     localStorage.setItem('walletAddress', wallet.address);
+    
+    // Verificar se é admin e mostrar botão
+    await checkAndShowAdminButton(wallet.address);
   } catch (error) {
     alert(`Erro ao conectar: ${error.message}`);
   }
@@ -238,6 +246,27 @@ patientAccessBtn.addEventListener('click', () => {
 doctorAccessBtn.addEventListener('click', () => {
   window.location.href = 'doctor-access.html';
 });
+
+adminAccessBtn.addEventListener('click', () => {
+  window.location.href = 'admin.html';
+});
+
+// Função para verificar se é admin e mostrar botão
+async function checkAndShowAdminButton(address) {
+  try {
+    const isAdmin = await isAdminWallet(address);
+    if (isAdmin && adminAccessBtn) {
+      adminAccessBtn.style.display = 'block';
+    } else if (adminAccessBtn) {
+      adminAccessBtn.style.display = 'none';
+    }
+  } catch (error) {
+    console.warn('Erro ao verificar se é admin:', error);
+    if (adminAccessBtn) {
+      adminAccessBtn.style.display = 'none';
+    }
+  }
+}
 
 // Botão desconectar será configurado em setupDisconnectButton()
 

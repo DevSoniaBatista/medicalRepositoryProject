@@ -159,25 +159,93 @@ accessForm.addEventListener('submit', async (event) => {
       return;
     }
 
+    recordsContainer.innerHTML = '';
+    
+    // Primeiro, verificar quais consentimentos existem no contrato atual
+    showToast('Verificando consentimentos no contrato atual...');
+    const validRecords = [];
+    const invalidConsents = [];
+    
+    for (let i = 0; i < accessKey.records.length; i++) {
+      const recordKey = accessKey.records[i];
+      try {
+        const consentCheck = await verifyConsent(
+          wallet.provider,
+          recordKey.recordId,
+          recordKey.doctor,
+          recordKey.nonce
+        );
+
+        if (consentCheck.valid) {
+          // Verificar se o registro também existe
+          const record = await getRecord(wallet.provider, recordKey.recordId);
+          const ethers = window.ethers;
+          if (record && record.owner !== ethers.ZeroAddress && record.id.toString() !== '0') {
+            validRecords.push(recordKey);
+          }
+        } else {
+          // Se o consentimento não existe no contrato, adicionar à lista de inválidos
+          if (consentCheck.reason && consentCheck.reason.includes('não existe para o contrato')) {
+            invalidConsents.push(recordKey.recordId);
+          }
+        }
+      } catch (error) {
+        console.error(`Erro ao verificar consentimento para registro ${recordKey.recordId}:`, error);
+      }
+    }
+
+    // Se nenhum consentimento válido foi encontrado, mostrar apenas mensagem de erro
+    if (validRecords.length === 0) {
+      // Ocultar o título "Registros Acessíveis"
+      const titleElement = accessResult.querySelector('h2');
+      if (titleElement) {
+        titleElement.style.display = 'none';
+      }
+      
+      // Mostrar apenas a mensagem de erro, sem status de acesso
+      // Ajustar o card para ocupar toda a largura disponível
+      statusMessage.style.maxWidth = '100%';
+      statusMessage.style.width = '100%';
+      statusMessage.style.margin = '0';
+      statusMessage.innerHTML = `
+        <p class="note error" style="font-weight: 600; font-size: 1.1rem; text-align: center; padding: 24px; margin: 0;">
+          Não existe esse consentimento para o contrato atual.
+        </p>
+      `;
+      
+      // Limpar container de registros
+      recordsContainer.innerHTML = '';
+      
+      accessResult.classList.remove('hidden');
+      return;
+    }
+    
+    // Se houver registros válidos, mostrar o título normalmente
+    const titleElement = accessResult.querySelector('h2');
+    if (titleElement) {
+      titleElement.style.display = 'block';
+    }
+
+    // Atualizar status com apenas os registros válidos
     statusMessage.innerHTML = `
       <h3>Status de Acesso</h3>
       <p><strong>Paciente:</strong> ${accessKey.patient}</p>
       <p><strong>Válido até:</strong> ${new Date(Number(accessKey.expiry) * 1000).toLocaleString('pt-BR')}</p>
-      <p><strong>Registros disponíveis:</strong> ${accessKey.records.length}</p>
+      <p><strong>Registros disponíveis:</strong> ${validRecords.length}</p>
     `;
 
-    recordsContainer.innerHTML = '';
     let loadedCount = 0;
-    const totalRecords = accessKey.records.length;
+    const totalRecords = validRecords.length;
     
-    console.log(`Processando ${totalRecords} registro(s)...`);
+    console.log(`Processando ${totalRecords} registro(s) válido(s)...`);
 
-    for (let i = 0; i < accessKey.records.length; i++) {
-      const recordKey = accessKey.records[i];
+    for (let i = 0; i < validRecords.length; i++) {
+      const recordKey = validRecords[i];
       try {
         console.log(`Processando registro ${i + 1}/${totalRecords}: ${recordKey.recordId}`);
         showToast(`Processando registro ${i + 1}/${totalRecords}: #${recordKey.recordId}...`);
 
+        // Verificar consentimento novamente (já validado, mas para garantir)
         const consentCheck = await verifyConsent(
           wallet.provider,
           recordKey.recordId,
@@ -186,17 +254,22 @@ accessForm.addEventListener('submit', async (event) => {
         );
 
         if (!consentCheck.valid) {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <h3>Registro #${recordKey.recordId}</h3>
-            <p class="note error">${consentCheck.reason}</p>
-          `;
-          recordsContainer.appendChild(card);
+          // Se houver algum erro diferente de "não existe", mostrar mensagem
+          if (!consentCheck.reason || !consentCheck.reason.includes('não existe para o contrato')) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+              <h3>Registro #${recordKey.recordId}</h3>
+              <p class="note error">${consentCheck.reason}</p>
+            `;
+            recordsContainer.appendChild(card);
+          }
           continue;
         }
 
+        // Buscar o registro (já validado na primeira etapa)
         const record = await getRecord(wallet.provider, recordKey.recordId);
+
         if (record.revoked) {
           const card = document.createElement('div');
           card.className = 'card';

@@ -47,6 +47,8 @@ Copie a chave gerada para o arquivo `.env`.
 
 ### 2. Configurar Variáveis de Ambiente
 
+#### Ambiente Local
+
 Crie um arquivo `.env` na raiz do projeto com:
 
 ```env
@@ -75,10 +77,24 @@ NEXT_PUBLIC_MAX_FILE_SIZE_BYTES=26214400
 NEXT_PUBLIC_ALLOWED_ORIGINS=http://127.0.0.1:8080,http://localhost:8080
 ```
 
+#### Ambiente Vercel
+
+No painel do Vercel, acesse **Settings** > **Environment Variables** e adicione as **mesmas variáveis** com o prefixo `NEXT_PUBLIC_`:
+
+- `NEXT_PUBLIC_CONTRACT_ADDRESS`
+- `NEXT_PUBLIC_CHAIN_ID`
+- `NEXT_PUBLIC_NETWORK_NAME`
+- `NEXT_PUBLIC_MASTER_KEY`
+- `NEXT_PUBLIC_PINATA_JWT` (ou `NEXT_PUBLIC_PINATA_API_KEY` + `NEXT_PUBLIC_PINATA_SECRET`)
+
 ⚠️ **IMPORTANTE**: 
+- Use o **mesmo formato** (`NEXT_PUBLIC_*`) em ambos os ambientes
+- Marque todas as variáveis para Production, Preview e Development no Vercel
 - A chave mestra deve ter exatamente 64 caracteres hexadecimais
 - Mantenha a chave em segredo
 - Use a mesma chave em todos os ambientes para manter compatibilidade
+
+📖 **Documentação completa**: Veja [`docs/ENV_VARIABLES.md`](docs/ENV_VARIABLES.md) para detalhes.
 
 ## Como Executar
 

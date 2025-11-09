@@ -55,15 +55,18 @@ O sistema permite que **pacientes controlem completamente seus prontuários méd
 
 **1.4. Registro On-Chain**
 - Paciente calcula hash do payload cifrado: `keccak256(payloadCifrado)`
-- Chama `createRecord()` no smart contract:
+- Chama `createRecord()` no smart contract com pagamento de 0.0001 ETH:
   ```solidity
-  createRecord(
+  createRecord{value: 0.0001 ether}(
       patientAddress,    // msg.sender
       cidMeta,          // CID do IPFS
       metaHash          // Hash do payload
   )
   ```
-- Contrato emite evento `RecordCreated` com ID do registro
+- Contrato emite eventos:
+  - `RecordCreated` com ID do registro
+  - `PaymentReceived` com informações do pagamento (pagador, valor, recordId)
+- Pagamento de 0.0001 ETH (≈ US$0.43) é acumulado no contrato para retirada posterior pelo admin
 
 #### Passo 2: Paciente Compartilha com Médico
 
@@ -94,7 +97,10 @@ O sistema permite que **pacientes controlem completamente seus prontuários méd
   )
   ```
 - Contrato verifica assinatura e armazena consentimento
-- Emite evento `ConsentGranted`
+- Emite eventos:
+  - `ConsentGranted` com informações do consentimento
+  - `ConsentKeyGenerated` com detalhes da chave gerada (para rastreamento do admin):
+    - Record ID, Paciente, Médico, Nonce (chave), Tempo de expiração, Timestamp
 
 #### Passo 3: Médico Acessa Registro
 
@@ -116,7 +122,9 @@ O sistema permite que **pacientes controlem completamente seus prontuários méd
   ```solidity
   logAccess(recordId, "viewed")
   ```
-- Contrato emite evento `AccessLogged` para auditoria
+- Contrato emite evento `AccessLogged` para auditoria com:
+  - Record ID, Médico (acessor), Paciente, Ação, Timestamp
+- Admin pode rastrear todos os acessos através deste evento
 
 ## Como Obter os Dados do Formulário JavaScript
 
@@ -208,15 +216,29 @@ const symKey = "a1b2c3d4e5f6..."; // 64 caracteres hex
 #### 1. Smart Contract (Blockchain)
 - **Contrato**: `MedicalRecords.sol` (UUPS upgradeable)
 - **Funções Principais**:
-  - `createRecord()`: Cria novo prontuário
+  - `createRecord()`: Cria novo prontuário (requer pagamento de 0.0001 ETH)
   - `grantConsent()`: Paciente concede acesso a médico
   - `revokeConsent()`: Revoga acesso
   - `logAccess()`: Médico registra quando acessou
+  - `withdraw()`: Admin retira fundos acumulados
+  - `pause()` / `unpause()`: Admin pausa/despausa contrato (emergência)
+- **Funções de Visualização (Admin)**:
+  - `getAdminAddress()`: Endereço do administrador
+  - `getRecordCreationFee()`: Taxa de criação (0.0001 ETH)
+  - `getTotalPayments()`: Total de pagamentos recebidos
+  - `getPaymentsByPayer()`: Total pago por uma wallet específica
+  - `getContractBalance()`: Saldo acumulado no contrato
 - **Armazenamento On-Chain**:
   - CID do IPFS (onde está o dado criptografado)
   - Hash do conteúdo (verificação de integridade)
   - Consentimentos e permissões
+  - Fundos acumulados (ETH)
   - **NÃO armazena**: chaves de criptografia, dados sensíveis
+- **Eventos de Rastreamento**:
+  - `PaymentReceived`: Todos os pagamentos (pagador, valor, recordId)
+  - `ConsentKeyGenerated`: Todas as chaves geradas (qual chave para qual paciente/médico, tempo de acesso)
+  - `AccessLogged`: Todos os acessos (médico, paciente, ação, timestamp)
+  - `PaymentWithdrawn`: Retiradas de fundos pelo admin
 
 #### 2. Armazenamento Descentralizado (IPFS)
 - **O que armazena**: Metadata criptografada em JSON
@@ -329,17 +351,34 @@ const symKey = "a1b2c3d4e5f6..."; // 64 caracteres hex
 - Consentimento específico para pesquisa
 - Dados agregados sem expor identidade
 
-## Modelo de Receita (Potencial)
+## Modelo de Receita
 
-### Opções de Monetização
+### Sistema de Pagamento Implementado
 
-1. **Taxa por Registro**: Pequena taxa em ETH/token por `createRecord()`
+1. **Taxa por Registro**: 
+   - **Valor**: 0.0001 ETH por registro criado (≈ US$0.43)
+   - **Processo**: Pagamento obrigatório ao criar exame via `createRecord()`
+   - **Acumulação**: Fundos ficam acumulados no contrato
+   - **Retirada**: Admin pode retirar fundos acumulados a qualquer momento via `withdraw()`
+   - **Rastreamento**: Todos os pagamentos são registrados em eventos `PaymentReceived`
+
+### Opções de Monetização Futuras
+
 2. **Assinatura Mensal**: Paciente paga para manter registros ativos
 3. **API Premium**: Hospitais/clínicas pagam para integrar com sistema
 4. **Serviços Adicionais**:
    - Backup de chaves (custodial recovery)
    - Integração com dispositivos IoT
    - Analytics agregados (com consentimento)
+
+### Controles Administrativos
+
+- **Gestão de Fundos**: Admin pode verificar saldo acumulado e retirar quando necessário
+- **Controle de Emergência**: Funções `pause()` e `unpause()` permitem pausar operações em caso de vulnerabilidade ou manutenção
+- **Rastreamento Completo**: Admin tem acesso a todos os eventos:
+  - Criação de exames (quem criou, quando, quanto pagou)
+  - Geração de chaves de acesso (qual chave para qual paciente/médico, tempo de acesso)
+  - Acessos ao histórico (qual médico acessou qual paciente, quando)
 
 ## Riscos e Mitigações
 
@@ -348,9 +387,10 @@ const symKey = "a1b2c3d4e5f6..."; // 64 caracteres hex
 | Risco | Mitigação |
 |-------|-----------|
 | Perda de chave privada | Backup seguro, hardware wallet, recuperação social (futuro) |
-| Ataque ao contrato | Auditoria de segurança, upgrade controlado por multisig |
+| Ataque ao contrato | Auditoria de segurança, upgrade controlado por multisig, função pause para emergência |
 | IPFS downtime | Pinata garante disponibilidade, múltiplos pinning services |
 | Gas costs altos | Otimizações, Layer 2 (Arbitrum, Polygon) |
+| Perda de fundos | Fundos acumulados no contrato, apenas admin pode retirar, função pause para proteção |
 
 ### Riscos Regulatórios
 
@@ -364,6 +404,11 @@ const symKey = "a1b2c3d4e5f6..."; // 64 caracteres hex
 - ✅ Contrato básico funcionando
 - ✅ Criptografia end-to-end
 - ✅ Sistema de consentimento
+- ✅ Sistema de pagamento (0.0001 ETH por registro)
+- ✅ Acumulação de fundos no contrato
+- ✅ Função de retirada para admin
+- ✅ Controles de emergência (pause/unpause)
+- ✅ Rastreamento completo de eventos para admin
 
 ### Fase 2 (Próximos Passos)
 - [ ] Interface web completa
@@ -385,6 +430,9 @@ Este sistema oferece uma **alternativa descentralizada e centrada no paciente** 
 - **Criptografia forte** para privacidade
 - **Controle do paciente** sobre seus próprios dados
 - **Interoperabilidade** com sistemas existentes
+- **Modelo de receita sustentável** com taxa por registro (0.0001 ETH ≈ US$0.43)
+- **Controles administrativos robustos** com gestão de fundos e emergência
+- **Rastreamento completo** de todas as operações para auditoria e transparência
 
-O modelo é **escalável, seguro e alinhado com tendências de privacidade e descentralização** na área de saúde digital.
+O modelo é **escalável, seguro, economicamente viável e alinhado com tendências de privacidade e descentralização** na área de saúde digital. O sistema de pagamento garante sustentabilidade financeira enquanto mantém custos acessíveis para pacientes, e os controles administrativos permitem gestão segura e responsiva do sistema.
 

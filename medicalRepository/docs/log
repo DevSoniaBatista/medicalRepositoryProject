@@ -1,0 +1,12 @@
+== Logs ==
+  Deploying MedicalRecords...
+  Admin address: 0x49eE6FB60a0941fC9aAc4DBf1e9d1aF4cc00DF1f
+  Implementation deployed at: 0x2D3B30e908e1cc326be0c35B8983B09e98eCAE4e
+  Proxy deployed at: 0x942B90fF56f5120B2C120085A3162EEc25141eA4
+  Contract version: 1.0.0
+
+=== Deployment Summary ===
+  Implementation: 0x2D3B30e908e1cc326be0c35B8983B09e98eCAE4e
+  Proxy: 0x942B90fF56f5120B2C120085A3162EEc25141eA4
+  Admin: 0x49eE6FB60a0941fC9aAc4DBf1e9d1aF4cc00DF1f
+  Use the proxy address for interactions

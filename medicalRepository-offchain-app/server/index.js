@@ -97,6 +97,11 @@ app.get('/config', (_req, res) => {
     config.blockExplorerUrl = process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL;
   }
   
+  // Adicionar admin wallet se configurado
+  if (process.env.NEXT_PUBLIC_WALLET_ADMIN) {
+    config.adminWallet = process.env.NEXT_PUBLIC_WALLET_ADMIN;
+  }
+  
   console.log('[Backend] Configuração retornada do .env:', {
     contractAddress: config.contractAddress,
     chainId: config.chainId,

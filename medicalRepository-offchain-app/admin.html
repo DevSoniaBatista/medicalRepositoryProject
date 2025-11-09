@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Administrativo - Medical Records</title>
+    <link rel="icon" type="image/png" href="images/favicon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="wallet-top-bar" class="wallet-top-bar hidden">
+      <span class="wallet-address">
+        <span class="wallet-address-short" id="wallet-address-short"></span>
+        <span class="wallet-address-full" id="wallet-address-full"></span>
+      </span>
+      <button id="disconnect-wallet-top" class="disconnect-btn-top">Desconectar</button>
+    </div>
+    <main class="container">
+      <header>
+        <h1>Painel Administrativo</h1>
+        <p>Sistema de gerenciamento administrativo do contrato Medical Records</p>
+      </header>
+
+      <section id="wallet-section" class="form-section">
+        <div class="card">
+          <h3>Conectar Carteira Admin</h3>
+          <p>Conecte sua carteira MetaMask de administrador</p>
+          <button id="connect-wallet" class="primary">Conectar MetaMask</button>
+          <p id="wallet-info" class="note hidden"></p>
+        </div>
+      </section>
+
+      <section id="admin-panel" class="results hidden">
+        <div class="card">
+          <h3>Status do Contrato</h3>
+          <div id="contract-status"></div>
+        </div>
+
+        <div class="card">
+          <h3>Informações de Pagamento</h3>
+          <div id="payment-info"></div>
+        </div>
+
+        <div class="card">
+          <h3>Ações Administrativas</h3>
+          <div class="actions" style="flex-direction: column; gap: 12px;">
+            <button id="withdraw-funds" class="primary" style="background: linear-gradient(135deg, #4ecdc4, #44a08d);">
+              Retirar Fundos
+            </button>
+            <button id="pause-contract" class="primary" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f);">
+              Pausar Contrato
+            </button>
+            <button id="unpause-contract" class="primary" style="background: linear-gradient(135deg, #4ecdc4, #44a08d); display: none;">
+              Despausar Contrato
+            </button>
+            <button id="refresh-data" class="primary" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+              Atualizar Dados
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Histórico de Eventos</h3>
+          <div id="events-container">
+            <p class="note">Clique em "Atualizar Dados" para carregar eventos</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="toast-template">
+      <div class="toast"></div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+    <script type="module" src="admin.js"></script>
+  </body>
+</html>
+

@@ -73,11 +73,18 @@ export default function handler(req, res) {
     config.blockExplorerUrl = blockExplorerUrl;
   }
 
+  // Adicionar admin wallet se configurado
+  const adminWallet = process.env.NEXT_PUBLIC_WALLET_ADMIN || process.env.WALLET_ADMIN;
+  if (adminWallet) {
+    config.adminWallet = adminWallet;
+  }
+
   console.log('[API] Configuração retornada:', {
     contractAddress: config.contractAddress,
     chainId: config.chainId,
     networkName: config.networkName,
-    masterKeyConfigured: true
+    masterKeyConfigured: true,
+    adminWalletConfigured: !!adminWallet
   });
 
   return res.status(200).json(config);

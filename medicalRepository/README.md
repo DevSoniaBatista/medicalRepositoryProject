@@ -7,8 +7,11 @@ A decentralized medical records system built on Ethereum using Foundry. Patients
 - 🔐 **Wallet-Based Authentication**: Patients control records with their private keys
 - 🔒 **End-to-End Encryption**: All metadata encrypted client-side before IPFS upload
 - 📝 **EIP-712 Consent Management**: Cryptographic consent signatures
+- 💰 **Payment System**: 0.0001 ETH fee per record creation (≈ US$0.43)
+- 💼 **Admin Controls**: Fund accumulation, withdrawal, and emergency pause/unpause
 - 🔄 **UUPS Upgradeable**: Smart contract can be upgraded safely
-- 📊 **Audit Trail**: All access logged on-chain
+- 📊 **Audit Trail**: All access logged on-chain with full tracking
+- ⏸️ **Emergency Controls**: Pause/unpause functionality for admin
 - 🧪 **Comprehensive Tests**: Full test coverage with Foundry
 
 ## Architecture
@@ -64,6 +67,8 @@ forge install OpenZeppelin/openzeppelin-foundry-upgrades
 │   └── IntegrationFlow.t.sol         # Integration tests
 ├── docs/
 │   ├── TECHNICAL_DOC.md              # Technical documentation
+│   ├── BUSINESS_SUMMARY.md           # Business model and use cases
+│   ├── FRONTEND_INTEGRATION.md       # Frontend integration guide
 │   ├── EIP712_SAMPLES.json           # EIP-712 examples
 │   └── PINATA_EXAMPLES.md            # Pinata integration guide
 └── foundry.toml                      # Foundry configuration
@@ -140,14 +145,16 @@ forge script script/Upgrade.s.sol \
    const cid = await pinata.pinJSONToIPFS(encrypted);
    ```
 
-3. **Create record on-chain**:
+3. **Create record on-chain** (requires 0.0001 ETH payment):
    ```solidity
-   uint256 recordId = medicalRecords.createRecord(
+   uint256 recordId = medicalRecords.createRecord{value: 0.0001 ether}(
        patientAddress,
        cid,
        keccak256(encryptedMetadata)
    );
    ```
+   
+   **Note**: Payment of 0.0001 ETH (≈ US$0.43) is required and accumulated in the contract. Admin can withdraw funds using `withdraw()`.
 
 ### Granting Consent
 
@@ -196,6 +203,45 @@ forge script script/Upgrade.s.sol \
    medicalRecords.logAccess(recordId, "viewed");
    ```
 
+## Admin Functions
+
+### Payment Management
+
+**Check contract balance:**
+```solidity
+uint256 balance = medicalRecords.getContractBalance();
+```
+
+**Withdraw accumulated funds** (admin only):
+```solidity
+medicalRecords.withdraw(); // Transfers all accumulated ETH to admin
+```
+
+**View payment statistics:**
+```solidity
+uint256 total = medicalRecords.getTotalPayments();
+uint256 byPayer = medicalRecords.getPaymentsByPayer(patientAddress);
+```
+
+### Emergency Controls
+
+**Pause contract** (admin only):
+```solidity
+medicalRecords.pause(); // Stops createRecord, grantConsent, logAccess
+```
+
+**Unpause contract** (admin only):
+```solidity
+medicalRecords.unpause(); // Resumes all operations
+```
+
+**Check pause status:**
+```solidity
+bool isPaused = medicalRecords.paused();
+```
+
+**Note**: When paused, `withdraw()` and view functions still work. Only state-changing operations are blocked.
+
 ## Testing
 
 ### Unit Tests
@@ -235,6 +281,9 @@ forge coverage
 - ✅ **Expiry validation**: Consents expire automatically
 - ✅ **Access control**: Role-based upgrade authorization
 - ✅ **Storage gaps**: Upgrade safety preserved
+- ✅ **Payment security**: Funds accumulated safely, admin-controlled withdrawal
+- ✅ **Emergency controls**: Pause/unpause for security incidents
+- ✅ **Full audit trail**: All payments, consents, and accesses tracked via events
 
 ### Recommendations
 
@@ -247,6 +296,8 @@ forge coverage
 ## Documentation
 
 - [Technical Documentation](docs/TECHNICAL_DOC.md) - Complete technical specification
+- [Business Summary](docs/BUSINESS_SUMMARY.md) - Business model and use cases
+- [Frontend Integration](docs/FRONTEND_INTEGRATION.md) - Frontend integration guide with payment and event tracking
 - [EIP-712 Examples](docs/EIP712_SAMPLES.json) - Consent signing examples
 - [Pinata Integration](docs/PINATA_EXAMPLES.md) - IPFS upload examples
 
@@ -315,6 +366,10 @@ For issues and questions:
 
 ## Roadmap
 
+- [x] Payment system with fund accumulation
+- [x] Admin withdrawal functionality
+- [x] Pause/unpause emergency controls
+- [x] Complete event tracking for admin
 - [ ] Batch operations
 - [ ] Consent templates
 - [ ] Access history queries

@@ -99,21 +99,6 @@
               <button data-copy="encrypted-payload">Copiar</button>
             </div>
           </div>
-          <div class="card" style="border: 2px solid var(--accent);">
-            <h4>🔑 Chave Mestre Global</h4>
-            <p class="note">
-              <strong>Informação:</strong> A chave mestra é global e configurada no servidor via arquivo .env. 
-              Todos os registros são criptografados com a mesma chave mestra.
-            </p>
-            <p class="note">
-              <strong>Importante:</strong> O médico não precisa de chave separada. Ele descriptografa os registros 
-              usando a chave mestra global que é obtida automaticamente do servidor quando ele usa a chave de acesso.
-            </p>
-            <p class="note">
-              <strong>Para gerar a chave mestra:</strong> Execute <code>node generate-master-key.js</code> e adicione 
-              <code>MASTER_KEY=...</code> ao arquivo .env do servidor.
-            </p>
-          </div>
           <div class="card">
             <h4>Status do Registro</h4>
             <p id="record-status" class="note"></p>

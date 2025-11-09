@@ -6,14 +6,34 @@ let CHAIN_ID = null;
 let NETWORK_NAME = null;
 let NETWORK_CONFIG = null;
 let MASTER_KEY = null;
+let ADMIN_WALLET = null;
 
 const CONTRACT_ABI = [
-  'function createRecord(address patient, string calldata cidMeta, bytes32 metaHash) external returns (uint256 recordId)',
+  'function createRecord(address patient, string calldata cidMeta, bytes32 metaHash) external payable returns (uint256 recordId)',
   'function getRecord(uint256 recordId) external view returns (tuple(uint256 id, address owner, string cidMeta, bytes32 metaHash, uint64 timestamp, bool revoked))',
   'function grantConsent(uint256 recordId, address doctor, uint64 expiry, bytes32 nonce, bytes calldata patientSignature) external',
   'function getConsent(uint256 recordId, address doctor, bytes32 nonce) external view returns (tuple(uint256 recordId, address patient, address doctor, uint64 expiry, bytes32 nonce, bool revoked))',
+  // Funções administrativas
+  'function getAdminAddress() external view returns (address)',
+  'function getRecordCreationFee() external view returns (uint256)',
+  'function getContractBalance() external view returns (uint256)',
+  'function getTotalPayments() external view returns (uint256)',
+  'function getPaymentsByPayer(address payer) external view returns (uint256)',
+  'function paused() external view returns (bool)',
+  'function withdraw() external',
+  'function pause() external',
+  'function unpause() external',
+  // AccessControl
+  'function hasRole(bytes32 role, address account) external view returns (bool)',
+  'function grantRole(bytes32 role, address account) external',
+  'function revokeRole(bytes32 role, address account) external',
+  // Eventos
   'event RecordCreated(uint256 indexed id, address indexed owner, string cidMeta, bytes32 metaHash, uint64 timestamp)',
-  'event ConsentGranted(uint256 indexed recordId, address indexed patient, address indexed doctor, uint64 expiry, bytes32 nonce)'
+  'event ConsentGranted(uint256 indexed recordId, address indexed patient, address indexed doctor, uint64 expiry, bytes32 nonce)',
+  'event PaymentReceived(address indexed payer, address indexed recipient, uint256 amount, uint256 indexed recordId, string paymentType, uint256 timestamp)',
+  'event PaymentWithdrawn(address indexed recipient, uint256 amount, uint256 timestamp)',
+  'event ConsentKeyGenerated(uint256 indexed recordId, address indexed patient, address indexed doctor, bytes32 nonce, uint64 expiry, uint256 timestamp)',
+  'event AccessLogged(uint256 indexed recordId, address indexed accessor, address indexed patient, uint256 timestamp, string action)'
 ];
 
 let EIP712_DOMAIN = {
@@ -70,6 +90,7 @@ async function loadConfig() {
       CHAIN_ID = BigInt(config.chainId);
       NETWORK_NAME = config.networkName;
       MASTER_KEY = config.masterKey;
+      ADMIN_WALLET = config.adminWallet || null;
       
       // Construir configuração da rede para MetaMask
       const chainIdHex = '0x' + config.chainId.toString(16);
@@ -273,6 +294,18 @@ export async function getNetworkName() {
   return NETWORK_NAME;
 }
 
+export async function getAdminWallet() {
+  await ensureConfigLoaded();
+  return ADMIN_WALLET;
+}
+
+export async function isAdminWallet(address) {
+  if (!address) return false;
+  const adminWallet = await getAdminWallet();
+  if (!adminWallet) return false;
+  return address.toLowerCase() === adminWallet.toLowerCase();
+}
+
 export async function getContract(provider) {
   await ensureConfigLoaded();
   const ethers = window.ethers;
@@ -285,7 +318,20 @@ export async function createRecord(signer, cidMeta, metaHash) {
   const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
   const address = await signer.getAddress();
   
-  const tx = await contract.createRecord(address, cidMeta, metaHash);
+  // Obter a taxa de criação do contrato (OBRIGATÓRIO)
+  const fee = await contract.getRecordCreationFee();
+  
+  // Verificar se o contrato está pausado
+  const isPaused = await contract.paused();
+  if (isPaused) {
+    throw new Error('Contrato está pausado. Não é possível criar registros no momento.');
+  }
+  
+  // Criar registro e enviar pagamento OBRIGATÓRIO
+  const tx = await contract.createRecord(address, cidMeta, metaHash, {
+    value: fee // ⚠️ PAGAMENTO OBRIGATÓRIO
+  });
+  
   const receipt = await tx.wait();
   
   const event = receipt.logs.find(log => {
@@ -356,8 +402,16 @@ export async function verifyConsent(provider, recordId, doctorAddress, nonce) {
   const consent = await contract.getConsent(recordId, doctorAddress, nonce);
   
   const ethers = window.ethers;
+  
+  // Verificar se o consentimento existe no contrato atual
   if (consent.patient === ethers.ZeroAddress) {
-    return { valid: false, reason: 'Consentimento não encontrado' };
+    return { valid: false, reason: 'O consentimento enviado não existe para o contrato' };
+  }
+
+  // Verificar se o recordId do consentimento corresponde ao recordId solicitado
+  // Isso garante que o consentimento pertence ao contrato correto
+  if (consent.recordId.toString() !== recordId.toString()) {
+    return { valid: false, reason: 'O consentimento enviado não existe para o contrato' };
   }
 
   if (consent.revoked) {

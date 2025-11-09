@@ -50,8 +50,33 @@ interface IMedicalRecords {
     event AccessLogged(
         uint256 indexed recordId,
         address indexed accessor,
+        address indexed patient,
         uint64 timestamp,
         string action
+    );
+
+    event PaymentReceived(
+        address indexed payer,
+        address indexed recipient,
+        uint256 amount,
+        uint256 indexed recordId,
+        string paymentType,
+        uint64 timestamp
+    );
+
+    event ConsentKeyGenerated(
+        uint256 indexed recordId,
+        address indexed patient,
+        address indexed doctor,
+        bytes32 nonce,
+        uint64 expiry,
+        uint64 timestamp
+    );
+
+    event PaymentWithdrawn(
+        address indexed recipient,
+        uint256 amount,
+        uint64 timestamp
     );
 
     event ImplementationUpgraded(address indexed newImplementation);
@@ -62,7 +87,7 @@ interface IMedicalRecords {
         address patient,
         string calldata cidMeta,
         bytes32 metaHash
-    ) external returns (uint256 recordId);
+    ) external payable returns (uint256 recordId);
 
     function revokeRecord(uint256 recordId) external;
 
@@ -91,5 +116,22 @@ interface IMedicalRecords {
         address doctor,
         bytes32 nonce
     ) external view returns (Consent memory);
+
+    // Admin view functions
+    function getAdminAddress() external view returns (address);
+
+    function getRecordCreationFee() external view returns (uint256);
+
+    function getTotalPayments() external view returns (uint256);
+
+    function getPaymentsByPayer(address payer) external view returns (uint256);
+
+    function getContractBalance() external view returns (uint256);
+
+    function withdraw() external;
+
+    function pause() external;
+
+    function unpause() external;
 }
 
