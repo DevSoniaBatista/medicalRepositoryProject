@@ -158,10 +158,10 @@ async function ensureConfigLoaded() {
       const errorMsg = 
         'ERRO: Configuração não disponível!\n\n' +
         'Configure o arquivo .env com:\n' +
-        '  CONTRACT_ADDRESS=seu_endereco_aqui\n' +
-        '  CHAIN_ID=11155111\n' +
-        '  NETWORK_NAME=Sepolia\n' +
-        '  MASTER_KEY=chave_hex_64_caracteres\n\n' +
+        '  NEXT_PUBLIC_CONTRACT_ADDRESS=seu_endereco_aqui\n' +
+        '  NEXT_PUBLIC_CHAIN_ID=11155111\n' +
+        '  NEXT_PUBLIC_NETWORK_NAME=Sepolia\n' +
+        '  NEXT_PUBLIC_MASTER_KEY=chave_hex_64_caracteres\n\n' +
         'E certifique-se de que o backend está rodando (npm run api)';
       
       console.error('[Config]', errorMsg);
@@ -174,7 +174,7 @@ async function ensureConfigLoaded() {
 export async function getMasterKey() {
   await ensureConfigLoaded();
   if (!MASTER_KEY) {
-    throw new Error('Chave mestra não configurada. Configure MASTER_KEY no arquivo .env');
+    throw new Error('Chave mestra não configurada. Configure NEXT_PUBLIC_MASTER_KEY no arquivo .env');
   }
   return MASTER_KEY;
 }

@@ -420,15 +420,18 @@ O antigo `index.html` (gerador de metadata) foi substituído pela nova página i
 ### Backend (`.env`)
 ```
 # Credenciais Pinata (obrigatório)
-PINATA_JWT=seu_token_jwt
+NEXT_PUBLIC_PINATA_JWT=seu_token_jwt
 # ou
-PINATA_API_KEY=seu_api_key
-PINATA_SECRET=seu_secret_key
+NEXT_PUBLIC_PINATA_API_KEY=seu_api_key
+NEXT_PUBLIC_PINATA_SECRET=seu_secret_key
 
-# Configuração do contrato blockchain (opcional - usa valores padrão se não definido)
-CONTRACT_ADDRESS=0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053
-CHAIN_ID=11155111
-NETWORK_NAME=Sepolia
+# Configuração do contrato blockchain (obrigatório)
+NEXT_PUBLIC_CONTRACT_ADDRESS=seu_endereco_do_contrato
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_NETWORK_NAME=Sepolia
+
+# Chave Mestre Global (obrigatório)
+NEXT_PUBLIC_MASTER_KEY=chave_hex_64_caracteres
 ```
 
 ---

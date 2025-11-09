@@ -23,7 +23,7 @@ node generate-master-key.js
 
 3. Adicione ao arquivo `.env`:
 ```env
-MASTER_KEY=chave_gerada_aqui_64_caracteres_hex
+NEXT_PUBLIC_MASTER_KEY=chave_gerada_aqui_64_caracteres_hex
 ```
 
 ## Configuração do .env
@@ -32,22 +32,22 @@ O arquivo `.env` deve conter:
 
 ```env
 # Blockchain
-CONTRACT_ADDRESS=seu_endereco_do_contrato
-CHAIN_ID=11155111
-NETWORK_NAME=Sepolia
+NEXT_PUBLIC_CONTRACT_ADDRESS=seu_endereco_do_contrato
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_NETWORK_NAME=Sepolia
 
 # Chave Mestre Global (obrigatória)
-MASTER_KEY=chave_hex_64_caracteres
+NEXT_PUBLIC_MASTER_KEY=chave_hex_64_caracteres
 
 # Pinata (opcional)
-PINATA_JWT=seu_token
+NEXT_PUBLIC_PINATA_JWT=seu_token
 # ou
-PINATA_API_KEY=seu_api_key
-PINATA_SECRET=seu_secret
+NEXT_PUBLIC_PINATA_API_KEY=seu_api_key
+NEXT_PUBLIC_PINATA_SECRET=seu_secret
 
 # RPC e Explorer (opcional)
-RPC_URL=https://rpc.sepolia.org
-BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
+NEXT_PUBLIC_RPC_URL=https://rpc.sepolia.org
+NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
 ```
 
 ## Como Funciona
@@ -88,7 +88,7 @@ Se você estava usando chaves mestras individuais por paciente:
 ## Troubleshooting
 
 ### "Chave mestra não configurada"
-- Verifique se `MASTER_KEY` está no arquivo `.env`
+- Verifique se `NEXT_PUBLIC_MASTER_KEY` está no arquivo `.env`
 - Verifique se o backend está rodando (`npm run api`)
 - Verifique se a chave tem exatamente 64 caracteres hexadecimais
 
@@ -104,7 +104,7 @@ CHAVE MESTRA GERADA
 
 Adicione esta linha ao seu arquivo .env:
 
-MASTER_KEY=b5f0c3ebe9d77e6489a61633353d75ac7b469169ad27034c45429eb66814710f
+NEXT_PUBLIC_MASTER_KEY=b5f0c3ebe9d77e6489a61633353d75ac7b469169ad27034c45429eb66814710f
 ========================================
 
 ⚠️  IMPORTANTE:

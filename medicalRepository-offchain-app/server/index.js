@@ -13,13 +13,13 @@ const app = express();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: Number(process.env.MAX_FILE_SIZE_BYTES || 25 * 1024 * 1024)
+    fileSize: Number(process.env.NEXT_PUBLIC_MAX_FILE_SIZE_BYTES || 25 * 1024 * 1024)
   }
 });
 
 const allowedOrigins = (
-  process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  process.env.NEXT_PUBLIC_ALLOWED_ORIGINS
+    ? process.env.NEXT_PUBLIC_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
     : [
         'http://127.0.0.1:8080',
         'http://localhost:8080',
@@ -47,23 +47,23 @@ app.get('/health', (_req, res) => {
 
 app.get('/config', (_req, res) => {
   // Ler do .env - NÃO usar valores padrão hardcoded
-  const contractAddress = process.env.CONTRACT_ADDRESS;
-  const chainId = process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID, 10) : null;
-  const networkName = process.env.NETWORK_NAME;
-  const masterKey = process.env.MASTER_KEY;
+  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+  const chainId = process.env.NEXT_PUBLIC_CHAIN_ID ? parseInt(process.env.NEXT_PUBLIC_CHAIN_ID, 10) : null;
+  const networkName = process.env.NEXT_PUBLIC_NETWORK_NAME;
+  const masterKey = process.env.NEXT_PUBLIC_MASTER_KEY;
   
   // Validar se as variáveis obrigatórias estão configuradas
   if (!contractAddress || !chainId || !networkName || !masterKey) {
     console.error('[Backend] ERRO: Variáveis de ambiente não configuradas!');
     console.error('[Backend] Configure no arquivo .env:');
-    console.error('  CONTRACT_ADDRESS=' + (contractAddress || 'NÃO DEFINIDO'));
-    console.error('  CHAIN_ID=' + (chainId || 'NÃO DEFINIDO'));
-    console.error('  NETWORK_NAME=' + (networkName || 'NÃO DEFINIDO'));
-    console.error('  MASTER_KEY=' + (masterKey ? 'DEFINIDO' : 'NÃO DEFINIDO'));
+    console.error('  NEXT_PUBLIC_CONTRACT_ADDRESS=' + (contractAddress || 'NÃO DEFINIDO'));
+    console.error('  NEXT_PUBLIC_CHAIN_ID=' + (chainId || 'NÃO DEFINIDO'));
+    console.error('  NEXT_PUBLIC_NETWORK_NAME=' + (networkName || 'NÃO DEFINIDO'));
+    console.error('  NEXT_PUBLIC_MASTER_KEY=' + (masterKey ? 'DEFINIDO' : 'NÃO DEFINIDO'));
     
     return res.status(500).json({
       error: 'Configuração incompleta',
-      message: 'Configure CONTRACT_ADDRESS, CHAIN_ID, NETWORK_NAME e MASTER_KEY no arquivo .env',
+      message: 'Configure NEXT_PUBLIC_CONTRACT_ADDRESS, NEXT_PUBLIC_CHAIN_ID, NEXT_PUBLIC_NETWORK_NAME e NEXT_PUBLIC_MASTER_KEY no arquivo .env',
       missing: {
         contractAddress: !contractAddress,
         chainId: !chainId,
@@ -77,7 +77,7 @@ app.get('/config', (_req, res) => {
   if (masterKey.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(masterKey)) {
     return res.status(500).json({
       error: 'Chave mestra inválida',
-      message: 'MASTER_KEY deve ser uma string hexadecimal de 64 caracteres (32 bytes)'
+      message: 'NEXT_PUBLIC_MASTER_KEY deve ser uma string hexadecimal de 64 caracteres (32 bytes)'
     });
   }
   
@@ -89,12 +89,12 @@ app.get('/config', (_req, res) => {
   };
   
   // Adicionar RPC e Block Explorer se configurados
-  if (process.env.RPC_URL) {
-    config.rpcUrl = process.env.RPC_URL;
+  if (process.env.NEXT_PUBLIC_RPC_URL) {
+    config.rpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
   }
   
-  if (process.env.BLOCK_EXPLORER_URL) {
-    config.blockExplorerUrl = process.env.BLOCK_EXPLORER_URL;
+  if (process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL) {
+    config.blockExplorerUrl = process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL;
   }
   
   console.log('[Backend] Configuração retornada do .env:', {
@@ -107,21 +107,21 @@ app.get('/config', (_req, res) => {
   res.json(config);
 });
 
-if (!process.env.PINATA_JWT && !(process.env.PINATA_API_KEY && process.env.PINATA_SECRET)) {
-  console.warn('[Pinata] Nenhuma credencial encontrada. Configure PINATA_JWT ou PINATA_API_KEY/PINATA_SECRET.');
+if (!process.env.NEXT_PUBLIC_PINATA_JWT && !(process.env.NEXT_PUBLIC_PINATA_API_KEY && process.env.NEXT_PUBLIC_PINATA_SECRET)) {
+  console.warn('[Pinata] Nenhuma credencial encontrada. Configure NEXT_PUBLIC_PINATA_JWT ou NEXT_PUBLIC_PINATA_API_KEY/NEXT_PUBLIC_PINATA_SECRET.');
 }
 
 function resolvePinataHeaders() {
-  if (process.env.PINATA_JWT) {
+  if (process.env.NEXT_PUBLIC_PINATA_JWT) {
     return {
-      Authorization: `Bearer ${process.env.PINATA_JWT}`
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`
     };
   }
 
-  if (process.env.PINATA_API_KEY && process.env.PINATA_SECRET) {
+  if (process.env.NEXT_PUBLIC_PINATA_API_KEY && process.env.NEXT_PUBLIC_PINATA_SECRET) {
     return {
-      pinata_api_key: process.env.PINATA_API_KEY,
-      pinata_secret_api_key: process.env.PINATA_SECRET
+      pinata_api_key: process.env.NEXT_PUBLIC_PINATA_API_KEY,
+      pinata_secret_api_key: process.env.NEXT_PUBLIC_PINATA_SECRET
     };
   }
 
@@ -146,7 +146,7 @@ app.post('/upload', async (req, res) => {
     const headers = resolvePinataHeaders();
     if (!headers) {
       return res.status(500).json({
-        error: 'Pinata credentials not configured. Set PINATA_JWT or PINATA_API_KEY/PINATA_SECRET.'
+        error: 'Pinata credentials not configured. Set NEXT_PUBLIC_PINATA_JWT or NEXT_PUBLIC_PINATA_API_KEY/NEXT_PUBLIC_PINATA_SECRET.'
       });
     }
 
@@ -195,7 +195,7 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
     const headers = resolvePinataHeaders();
     if (!headers) {
       return res.status(500).json({
-        error: 'Pinata credentials not configured. Set PINATA_JWT or PINATA_API_KEY/PINATA_SECRET.'
+        error: 'Pinata credentials not configured. Set NEXT_PUBLIC_PINATA_JWT or NEXT_PUBLIC_PINATA_API_KEY/NEXT_PUBLIC_PINATA_SECRET.'
       });
     }
 
@@ -248,7 +248,7 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.NEXT_PUBLIC_PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Pinata upload service listening on http://127.0.0.1:${PORT}`);

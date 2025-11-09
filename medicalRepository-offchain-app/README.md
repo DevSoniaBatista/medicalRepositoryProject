@@ -51,23 +51,28 @@ Crie um arquivo `.env` na raiz do projeto com:
 
 ```env
 # Credenciais Pinata (obrigatório)
-PINATA_JWT=seu_token_jwt
+NEXT_PUBLIC_PINATA_JWT=seu_token_jwt
 # ou
-PINATA_API_KEY=seu_api_key
-PINATA_SECRET=seu_secret_key
+NEXT_PUBLIC_PINATA_API_KEY=seu_api_key
+NEXT_PUBLIC_PINATA_SECRET=seu_secret_key
 
 # Configuração do contrato blockchain (obrigatório)
-CONTRACT_ADDRESS=seu_endereco_do_contrato
-CHAIN_ID=11155111
-NETWORK_NAME=Sepolia
+NEXT_PUBLIC_CONTRACT_ADDRESS=seu_endereco_do_contrato
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_NETWORK_NAME=Sepolia
 
 # Chave Mestre Global (obrigatório)
 # Gere com: node generate-master-key.js
-MASTER_KEY=chave_hex_64_caracteres
+NEXT_PUBLIC_MASTER_KEY=chave_hex_64_caracteres
 
 # RPC e Block Explorer (opcional)
-RPC_URL=https://rpc.sepolia.org
-BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
+NEXT_PUBLIC_RPC_URL=https://rpc.sepolia.org
+NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
+
+# Configurações do servidor (opcional)
+NEXT_PUBLIC_PORT=3000
+NEXT_PUBLIC_MAX_FILE_SIZE_BYTES=26214400
+NEXT_PUBLIC_ALLOWED_ORIGINS=http://127.0.0.1:8080,http://localhost:8080
 ```
 
 ⚠️ **IMPORTANTE**: 

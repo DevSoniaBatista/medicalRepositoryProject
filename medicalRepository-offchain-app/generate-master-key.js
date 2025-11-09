@@ -1,6 +1,6 @@
 // Script para gerar chave mestra global
 // Execute: node generate-master-key.js
-// Copie a chave gerada para o arquivo .env como MASTER_KEY=...
+// Copie a chave gerada para o arquivo .env como NEXT_PUBLIC_MASTER_KEY=...
 
 const crypto = require('crypto');
 
@@ -11,7 +11,7 @@ console.log('\n========================================');
 console.log('CHAVE MESTRA GERADA');
 console.log('========================================\n');
 console.log('Adicione esta linha ao seu arquivo .env:\n');
-console.log(`MASTER_KEY=${masterKey}\n`);
+console.log(`NEXT_PUBLIC_MASTER_KEY=${masterKey}\n`);
 console.log('========================================\n');
 console.log('⚠️  IMPORTANTE:');
 console.log('   - Mantenha esta chave em SEGREDO');

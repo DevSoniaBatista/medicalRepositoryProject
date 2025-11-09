@@ -14,11 +14,12 @@ A Vercel permite injetar variáveis de ambiente no frontend. Configure as seguin
 2. Adicione as seguintes variáveis:
 
 ```
-CONTRACT_ADDRESS=seu_endereco_do_contrato_aqui
-CHAIN_ID=11155111
-NETWORK_NAME=Sepolia
-RPC_URL=https://rpc.sepolia.org
-BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
+NEXT_PUBLIC_CONTRACT_ADDRESS=seu_endereco_do_contrato_aqui
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_NETWORK_NAME=Sepolia
+NEXT_PUBLIC_RPC_URL=https://rpc.sepolia.org
+NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
+NEXT_PUBLIC_MASTER_KEY=chave_hex_64_caracteres
 ```
 
 **IMPORTANTE**: Substitua `seu_endereco_do_contrato_aqui` pelo endereço real do seu contrato deployado.
@@ -33,11 +34,11 @@ Adicione um script antes do fechamento do `</head>` em todos os arquivos HTML:
 <script>
   // Injetar variáveis de ambiente do Vercel
   // IMPORTANTE: Não use valores padrão hardcoded - sempre use process.env
-  window.__CONTRACT_ADDRESS__ = '<%= process.env.CONTRACT_ADDRESS %>';
-  window.__CHAIN_ID__ = '<%= process.env.CHAIN_ID %>';
-  window.__NETWORK_NAME__ = '<%= process.env.NETWORK_NAME %>';
-  window.__RPC_URL__ = '<%= process.env.RPC_URL %>';
-  window.__BLOCK_EXPLORER_URL__ = '<%= process.env.BLOCK_EXPLORER_URL %>';
+  window.__CONTRACT_ADDRESS__ = '<%= process.env.NEXT_PUBLIC_CONTRACT_ADDRESS %>';
+  window.__CHAIN_ID__ = '<%= process.env.NEXT_PUBLIC_CHAIN_ID %>';
+  window.__NETWORK_NAME__ = '<%= process.env.NEXT_PUBLIC_NETWORK_NAME %>';
+  window.__RPC_URL__ = '<%= process.env.NEXT_PUBLIC_RPC_URL %>';
+  window.__BLOCK_EXPLORER_URL__ = '<%= process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL %>';
 </script>
 ```
 
@@ -77,12 +78,13 @@ Adicione este script no `<head>` de todos os arquivos HTML antes de carregar `bl
 Se você também está hospedando o backend:
 
 1. Configure as variáveis de ambiente no painel da Vercel:
-   - `PINATA_JWT` ou `PINATA_API_KEY` + `PINATA_SECRET`
-   - `CONTRACT_ADDRESS`
-   - `CHAIN_ID`
-   - `NETWORK_NAME`
-   - `RPC_URL` (opcional)
-   - `BLOCK_EXPLORER_URL` (opcional)
+   - `NEXT_PUBLIC_PINATA_JWT` ou `NEXT_PUBLIC_PINATA_API_KEY` + `NEXT_PUBLIC_PINATA_SECRET`
+   - `NEXT_PUBLIC_CONTRACT_ADDRESS`
+   - `NEXT_PUBLIC_CHAIN_ID`
+   - `NEXT_PUBLIC_NETWORK_NAME`
+   - `NEXT_PUBLIC_MASTER_KEY`
+   - `NEXT_PUBLIC_RPC_URL` (opcional)
+   - `NEXT_PUBLIC_BLOCK_EXPLORER_URL` (opcional)
 
 2. O endpoint `/api/config` será acessível em `https://seu-dominio.vercel.app/api/config`
 
