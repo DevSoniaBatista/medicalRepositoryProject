@@ -1,4 +1,4 @@
-import { connectWallet } from './blockchain.js';
+import { connectWallet, getContractAddress, getNetworkName, getChainId } from './blockchain.js';
 
 const connectButton = document.getElementById('connect-wallet');
 const walletSection = document.getElementById('wallet-section');
@@ -11,6 +11,9 @@ const walletTopBar = document.getElementById('wallet-top-bar');
 const walletAddressShort = document.getElementById('wallet-address-short');
 const walletAddressFull = document.getElementById('wallet-address-full');
 const disconnectBtnTop = document.getElementById('disconnect-wallet-top');
+const contractAddressEl = document.getElementById('contract-address');
+const networkNameEl = document.getElementById('network-name');
+const chainIdEl = document.getElementById('chain-id');
 
 // Verificar se elementos foram encontrados
 if (!disconnectBtnTop) {
@@ -111,8 +114,44 @@ function setupDisconnectButton() {
   console.log('Botão desconectar configurado');
 }
 
+// Carregar e exibir informações do contrato
+async function loadContractInfo() {
+  try {
+    const contractAddress = await getContractAddress();
+    const networkName = await getNetworkName();
+    const chainId = await getChainId();
+    
+    if (contractAddressEl) {
+      contractAddressEl.textContent = contractAddress;
+      contractAddressEl.style.cursor = 'pointer';
+      contractAddressEl.title = 'Clique para copiar';
+      contractAddressEl.addEventListener('click', () => {
+        navigator.clipboard.writeText(contractAddress);
+        showToast('Endereço do contrato copiado!');
+      });
+    }
+    
+    if (networkNameEl) {
+      networkNameEl.textContent = networkName || '-';
+    }
+    
+    if (chainIdEl) {
+      chainIdEl.textContent = chainId.toString();
+    }
+  } catch (error) {
+    console.error('Erro ao carregar informações do contrato:', error);
+    if (contractAddressEl) {
+      contractAddressEl.textContent = 'Erro ao carregar';
+      contractAddressEl.style.color = 'var(--error, #ff4444)';
+    }
+  }
+}
+
 // Verificar conexão ao carregar
 window.addEventListener('load', async () => {
+  // Carregar informações do contrato primeiro
+  await loadContractInfo();
+  
   // Configurar botão desconectar
   setupDisconnectButton();
   
