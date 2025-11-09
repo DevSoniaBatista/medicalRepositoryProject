@@ -1,128 +1,286 @@
-# Medical Metadata Encryption Demo
+# Medical Records - Frontend Application
 
-Projeto simples em JavaScript para gerar metadata cifrado (AES-256-GCM) antes de enviar para o smart contract/IPFS ou armazenar off-chain com segurança.
+Sistema completo de registros médicos descentralizados com interface web para pacientes e médicos. Utiliza criptografia AES-256-GCM com chave mestra global configurada no servidor.
+
+## Visão Geral
+
+Este é o frontend do sistema de registros médicos que permite:
+- **Pacientes**: Criar registros médicos, visualizar histórico e compartilhar acesso com médicos
+- **Médicos**: Acessar registros médicos com autorização do paciente usando apenas a chave de acesso
+- **Criptografia**: Todos os dados são criptografados com chave mestra global antes de serem enviados ao IPFS
+- **Blockchain**: Metadados e controle de acesso gerenciados via smart contracts na Ethereum
+
+## Características Principais
+
+- 🔐 **Chave Mestre Global**: Uma única chave configurada no `.env` para todos os registros
+- 🔒 **Criptografia End-to-End**: AES-256-GCM com chave mestra global
+- 📝 **EIP-712 Consent Management**: Assinaturas criptográficas para autorização
+- 🌐 **IPFS/Pinata**: Armazenamento descentralizado de dados criptografados
+- 👤 **Interface Completa**: Páginas separadas para pacientes e médicos
+- 🔑 **Acesso Simplificado**: Médico só precisa da chave de acesso (chave mestra obtida automaticamente)
 
 ## Pré-requisitos
 
 - Node.js 18+
 - npm
+- MetaMask instalado no navegador
+- Backend rodando (para upload ao Pinata e configuração)
 
-## Como executar
+## Instalação
 
 ```bash
-cd offchain-app
+cd medicalRepository-offchain-app
 npm install
-npm run start # serve a interface em http://127.0.0.1:8080
-
-# em outro terminal (para upload automático):
-npm run api    # inicia o serviço de upload em http://127.0.0.1:3000
-# ou
-npm run dev    # sobe front-end + backend juntos
 ```
 
-O comando `npm run start` inicia um servidor local (`http://127.0.0.1:8080`). Abra o link no navegador para acessar a interface. 
+## Configuração
 
-O serviço backend (`npm run api`) expõe `POST /upload`, que recebe o payload cifrado e o envia ao Pinata usando as credenciais definidas via variáveis de ambiente.
+### 1. Gerar Chave Mestre
 
-> ⚠️ O Web Crypto API exige HTTPS ou `localhost`. O `http-server` usa `127.0.0.1`, permitindo o uso da API.
+Primeiro, gere a chave mestra global:
 
-## Fluxo básico
+```bash
+node generate-master-key.js
+```
 
-1. (Opcional) Se ainda não tem os CIDs dos arquivos do exame, acesse `upload.html`, envie as imagens/PDFs e copie os CIDs gerados automaticamente.
-2. Preencha os campos do formulário (veja a explicação dos campos logo abaixo).
-2. A ferramenta gera automaticamente:
-   - Metadata em JSON padronizado (`patientHash`, `examType`, `date`, `files`, `notesHash`).
-   - Chave simétrica aleatória (32 bytes) em hexadecimal.
-   - Vetor de inicialização (IV) de 12 bytes.
-   - Payload cifrado (AES-256-GCM) com tag de autenticação.
-3. Use os botões para copiar JSONs ou baixar arquivos.
-4. Faça upload do payload cifrado para o Pinata usando os exemplos em `docs/PINATA_EXAMPLES.md` **ou** clique em "Enviar ao Pinata" (backend). Armazene as credenciais do Pinata em variáveis de ambiente, nunca diretamente no front-end.
-5. Registre `cidMeta` + `metaHash` no contrato via `createRecord`.
+Copie a chave gerada para o arquivo `.env`.
 
-## Campos do formulário
+### 2. Configurar Variáveis de Ambiente
 
-- `Patient Hash`: identificador único do paciente em formato hexadecimal (ex.: `0xabc...`). Pode ser a wallet address do paciente ou um hash derivado (`keccak256(walletAddress)` ou `keccak256(patientId)`). A recomendação é **hashiar** a informação original para que terceiros não consigam reidentificar o paciente.
-- `Exam Type`: tipo de exame (ex.: `blood`, `x-ray`).
-- `Exam Date`: data no formato ISO (`YYYY-MM-DD`).
-- `Files (CIDs)`: lista de CIDs/IPFS associados ao exame (uma entrada por linha ou separadas por vírgula).
-- `Notes Hash`: opcional. Hash das anotações clínicas (`keccak256` do texto ou outro hash consistente).
+Crie um arquivo `.env` na raiz do projeto com:
 
-> Defina um padrão interno para calcular o `patientHash`. Se usar diretamente o endereço da carteira, considere armazenar apenas `keccak256(address)` para esconder o endereço público de quem visualizar o payload.
+```env
+# Credenciais Pinata (obrigatório)
+PINATA_JWT=seu_token_jwt
+# ou
+PINATA_API_KEY=seu_api_key
+PINATA_SECRET=seu_secret_key
 
-## Estrutura do payload gerado
+# Configuração do contrato blockchain (obrigatório)
+CONTRACT_ADDRESS=seu_endereco_do_contrato
+CHAIN_ID=11155111
+NETWORK_NAME=Sepolia
 
+# Chave Mestre Global (obrigatório)
+# Gere com: node generate-master-key.js
+MASTER_KEY=chave_hex_64_caracteres
+
+# RPC e Block Explorer (opcional)
+RPC_URL=https://rpc.sepolia.org
+BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
+```
+
+⚠️ **IMPORTANTE**: 
+- A chave mestra deve ter exatamente 64 caracteres hexadecimais
+- Mantenha a chave em segredo
+- Use a mesma chave em todos os ambientes para manter compatibilidade
+
+## Como Executar
+
+### Desenvolvimento
+
+```bash
+# Terminal 1: Iniciar backend
+npm run api    # Servidor em http://127.0.0.1:3000
+
+# Terminal 2: Iniciar frontend
+npm run start  # Interface em http://127.0.0.1:8080
+
+# Ou iniciar ambos juntos:
+npm run dev
+```
+
+### Produção
+
+O sistema detecta automaticamente o ambiente e ajusta as URLs do backend. Para produção na Vercel, veja [`docs/VERCEL_SETUP.md`](docs/VERCEL_SETUP.md).
+
+## Estrutura de Páginas
+
+### 1. `index.html` - Página Inicial
+- Conecta carteira MetaMask
+- Exibe informações do contrato (endereço, rede, chain ID)
+- Menu de acesso (Paciente ou Médico)
+
+### 2. `patient.html` - Acesso do Paciente
+- Criar novos exames médicos
+- Visualizar histórico de registros
+- Gerar chave de acesso para médicos
+- Upload de arquivos ao IPFS
+
+### 3. `doctor-access.html` - Acesso do Médico
+- Inserir chave de acesso fornecida pelo paciente
+- Visualizar registros autorizados
+- Descriptografar e exibir dados médicos
+
+### 4. `upload.html` - Upload de Arquivos
+- Upload de imagens/PDFs ao IPFS/Pinata
+- Geração automática de CIDs
+- Integração com formulário de criação de exames
+
+### 5. `patient-key.html` - Gerar Chave de Acesso
+- Interface alternativa para geração de chaves de acesso
+
+## Fluxo de Uso
+
+### Para Pacientes
+
+1. **Conectar Carteira**: Acesse `index.html` e conecte sua carteira MetaMask
+2. **Criar Registro**: 
+   - Acesse "Acesso Paciente"
+   - Clique em "Criar Novo Exame"
+   - (Opcional) Faça upload de arquivos em `upload.html`
+   - Preencha os dados do exame
+   - O sistema criptografa automaticamente com a chave mestra global
+   - Registro é enviado ao IPFS e blockchain
+3. **Compartilhar Acesso**:
+   - Clique em "Gerar Chave de Acesso"
+   - Informe o endereço do médico e validade
+   - Compartilhe a chave de acesso gerada (o médico não precisa de chave separada)
+
+### Para Médicos
+
+1. **Conectar Carteira**: Acesse `index.html` e conecte sua carteira MetaMask
+2. **Acessar Registros**:
+   - Acesse "Acesso Médico"
+   - Cole a chave de acesso fornecida pelo paciente
+   - O sistema busca automaticamente a chave mestra do backend
+   - Registros são descriptografados e exibidos
+
+## Arquitetura
+
+```
+Frontend (Browser)
+  ↓
+  Criptografa com MASTER_KEY (do backend)
+  ↓
+Backend (/upload)
+  ↓
+IPFS/Pinata (dados criptografados)
+  ↓
+Blockchain (CID + hash)
+  ↓
+Médico (com chave de acesso)
+  ↓
+Backend (/config) → MASTER_KEY
+  ↓
+Descriptografa registros
+```
+
+## Endpoints do Backend
+
+### `GET /config`
+Retorna configuração do sistema:
 ```json
 {
-  "encrypted": "<base64 do ciphertext sem tag>",
-  "authTag": "<base64 da tag de 16 bytes>",
-  "iv": "<base64 do IV>",
-  "schema": "medical-record-metadata@1",
-  "timestamp": 1700000000
+  "contractAddress": "0x...",
+  "chainId": 11155111,
+  "networkName": "Sepolia",
+  "masterKey": "chave_hex_64_caracteres",
+  "rpcUrl": "https://rpc.sepolia.org",
+  "blockExplorerUrl": "https://sepolia.etherscan.io"
 }
 ```
 
-- `encrypted`: resultado cifrado do JSON de metadata.
-- `authTag`: tag de autenticação do AES-GCM (16 bytes).
-- `iv`: vetor de inicialização (12 bytes).
-- `schema`: ajuda a versionar o formato.
-- `timestamp`: época de criação.
+### `POST /upload`
+Upload de payload criptografado ao Pinata:
+- **Body**: JSON com payload criptografado
+- **Retorna**: `{ cid, metaHash, pinSize, timestamp }`
 
-### Chave simétrica
+### `POST /upload-file`
+Upload de arquivo ao Pinata:
+- **Body**: `multipart/form-data` com campo `file`
+- **Retorna**: `{ cid, sha256, pinSize, timestamp, fileName }`
 
-- Exibida em hexadecimal (`32 bytes = 256 bits`).
-- **Nunca** armazenar essa chave on-chain.
-- Compartilhe com o médico usando ECIES (ver documentação principal).
+### `GET /health`
+Status do serviço:
+- **Retorna**: `{ status: 'ok', time: ISOString }`
 
-## Configurando variáveis de ambiente
+## Criptografia
 
-A interface web não lê variáveis de ambiente, portanto as credenciais devem ficar em um script/servidor backend.
+### Chave Mestre Global
+- **Tipo**: AES-256-GCM
+- **Tamanho**: 32 bytes (64 caracteres hex)
+- **Origem**: Configurada no `.env` do servidor
+- **Uso**: Todos os registros são criptografados com a mesma chave
 
-1. Crie um arquivo `.env` na raiz do projeto (não o versione) com:
+### Processo de Criptografia
+1. Metadata JSON é criado com dados do exame
+2. Sistema busca chave mestra global do backend
+3. Metadata é criptografado com AES-256-GCM
+4. Payload criptografado é enviado ao IPFS
+5. CID e hash são registrados na blockchain
 
-   ```
-   # Credenciais Pinata (obrigatório)
-   PINATA_JWT=seu_token_jwt
-   # ou
-   PINATA_API_KEY=seu_api_key
-   PINATA_SECRET=seu_secret_key
+### Processo de Descriptografia
+1. Médico fornece chave de acesso
+2. Sistema valida autorização na blockchain
+3. Sistema busca chave mestra global do backend
+4. Dados são descriptografados e exibidos
 
-   # Configuração do contrato blockchain (obrigatório)
-   CONTRACT_ADDRESS=seu_endereco_do_contrato
-   CHAIN_ID=11155111
-   NETWORK_NAME=Sepolia
-   
-   # Chave Mestre Global (obrigatório)
-   # Gere com: node generate-master-key.js
-   MASTER_KEY=chave_hex_64_caracteres
-   ```
+## Documentação Adicional
 
-2. No script Node.js, carregue com `require('dotenv').config();`.
-3. O frontend busca automaticamente a configuração do backend via `GET /config`.
-4. Alternativamente, exporte as variáveis diretamente no terminal antes de rodar o script (Linux/macOS: `export`, Windows PowerShell: `$env:PINATA_JWT="..."`).
+- [`docs/FUNCIONAMENTO.md`](docs/FUNCIONAMENTO.md) - Documentação completa do funcionamento do sistema
+- [`docs/MASTER_KEY_SETUP.md`](docs/MASTER_KEY_SETUP.md) - Configuração detalhada da chave mestra global
+- [`docs/VERCEL_SETUP.md`](docs/VERCEL_SETUP.md) - Guia de deploy na Vercel
+- [`docs/PINATA_EXAMPLES.md`](docs/PINATA_EXAMPLES.md) - Exemplos de integração com Pinata
+- [`docs/RESUMO_TECNICO_SMART_CONTRACT.md`](docs/RESUMO_TECNICO_SMART_CONTRACT.md) - Resumo técnico do smart contract
 
-### Endpoints backend disponíveis
+## Scripts Disponíveis
 
-- `GET http://127.0.0.1:3000/config`: retorna configuração do contrato blockchain (`{ contractAddress, chainId, networkName }`). O frontend busca automaticamente ao carregar.
-- `POST http://127.0.0.1:3000/upload`: recebe o payload cifrado no formato gerado pela interface e retorna `{ cid, metaHash, pinSize, timestamp }` em caso de sucesso. Em caso de erro, devolve `{ error, detail }` para facilitar o debug.
-- `POST http://127.0.0.1:3000/upload-file`: recebe `multipart/form-data` com `file` (imagem/PDF), envia ao Pinata (`pinFileToIPFS`) e retorna `{ cid, sha256, pinSize, timestamp }`.
-- `GET http://127.0.0.1:3000/health`: usado para checar o status do serviço.
+- `npm run start` - Inicia servidor frontend (http://127.0.0.1:8080)
+- `npm run api` - Inicia servidor backend (http://127.0.0.1:3000)
+- `npm run dev` - Inicia frontend e backend juntos
+- `node generate-master-key.js` - Gera chave mestra global para o `.env`
 
-### Fluxo de upload de arquivos
+## Segurança
 
-1. Acesse `http://127.0.0.1:8080/upload.html` e selecione os arquivos do exame.
-2. Clique em **Enviar arquivos**. Cada arquivo é enviado ao Pinata e retorna CID + hash SHA-256.
-3. Use **Preencher formulário** para mandar os CIDs direto para o campo `Files (CIDs)` do formulário principal (`index.html`).
-4. Complete o restante das informações e siga o fluxo normal de geração/envio do payload cifrado.
+- ✅ **Chave mestra nunca exposta**: Apenas o backend tem acesso ao `.env`
+- ✅ **Criptografia client-side**: Dados são criptografados no navegador antes do upload
+- ✅ **Sem chaves on-chain**: Chaves nunca são armazenadas na blockchain
+- ✅ **Autorização criptográfica**: EIP-712 garante autenticidade das autorizações
+- ✅ **Validação de rede**: Sistema verifica e solicita troca para rede correta
 
-## Customização
+## Troubleshooting
 
-- Ajuste os campos do formulário em `index.html` conforme a necessidade.
-- Modifique `script.js` para incluir campos adicionais no metadata.
-- Integre com APIs externas (por exemplo, geração de `patientHash`) conforme seu fluxo.
+### "Configuração não disponível"
+- Verifique se o backend está rodando (`npm run api`)
+- Verifique se o arquivo `.env` está configurado corretamente
+- Verifique se todas as variáveis obrigatórias estão definidas
 
-## Próximos passos sugeridos
+### "Chave mestra não configurada"
+- Execute `node generate-master-key.js` para gerar a chave
+- Adicione `MASTER_KEY=...` ao arquivo `.env`
+- Reinicie o backend
 
-- Adicionar upload direto ao Pinata via fetch.
-- Implementar cifragem ECIES para enviar a `encryptedSymKey` ao médico.
-- Sincronizar com wallets via WalletConnect para assinatura do consentimento.
+### "Erro ao descriptografar"
+- Verifique se está usando a mesma chave mestra usada para criptografar
+- Registros criados com chave diferente não podem ser descriptografados
 
+## Estrutura de Arquivos
+
+```
+medicalRepository-offchain-app/
+├── index.html              # Página inicial
+├── patient.html            # Interface do paciente
+├── doctor-access.html      # Interface do médico
+├── upload.html             # Upload de arquivos
+├── patient-key.html        # Geração de chave de acesso
+├── blockchain.js           # Funções de blockchain e configuração
+├── patient.js              # Lógica do paciente
+├── doctor-access.js        # Lógica do médico
+├── home.js                 # Lógica da página inicial
+├── upload.js               # Lógica de upload
+├── generate-master-key.js  # Script para gerar chave mestra
+├── server/
+│   └── index.js            # Backend (API + Pinata)
+├── docs/                   # Documentação
+│   ├── FUNCIONAMENTO.md
+│   ├── MASTER_KEY_SETUP.md
+│   ├── VERCEL_SETUP.md
+│   ├── PINATA_EXAMPLES.md
+│   └── RESUMO_TECNICO_SMART_CONTRACT.md
+└── README.md               # Este arquivo
+```
+
+## Licença
+
+MIT License
