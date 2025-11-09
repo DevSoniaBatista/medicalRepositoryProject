@@ -34,7 +34,7 @@ const recordStatus = document.getElementById('record-status');
 
 let wallet = null;
 let patientRecords = [];
-let latestSymKey = null;
+// Variável removida - chave mestra agora é global do .env
 
 const toastTemplate = document.getElementById('toast-template');
 
@@ -152,10 +152,21 @@ generateKeyBtn.addEventListener('click', () => {
   showSection('key');
 });
 
+// Chave mestra agora é global do .env - não precisa mais de backup individual
+
 // Função para desconectar
 function handleDisconnect() {
   console.log('Desconectando carteira...');
+  
+  // Limpar localStorage (chave mestra agora é global do .env, não precisa preservar)
+  const manualDisconnect = localStorage.getItem('manualDisconnect');
   localStorage.clear();
+  
+  // Restaurar flag de desconexão
+  if (manualDisconnect) {
+    localStorage.setItem('manualDisconnect', 'true');
+  }
+  
   window.location.href = 'index.html?disconnected=true';
 }
 
@@ -215,13 +226,13 @@ examForm.addEventListener('submit', async (event) => {
 
     const metadataJson = JSON.stringify(metadata);
     
-    // Usar chave mestre do paciente (ou criar se não existir)
-    const masterKey = await getOrCreateMasterKey(wallet.address);
+    // Usar chave mestra global do .env
+    const { getMasterKey } = await import('./blockchain.js');
+    const masterKey = await getMasterKey();
     const { payload } = await encryptMetadataWithKey(metadataJson, masterKey);
 
     document.getElementById('encrypted-payload').textContent = JSON.stringify(payload, null, 2);
-    document.getElementById('sym-key').textContent = masterKey;
-    latestSymKey = masterKey;
+    // Chave mestra é global do .env - não precisa exibir
 
     examResults.classList.remove('hidden');
     showToast('Metadata gerado! Enviando ao Pinata...');
@@ -329,16 +340,14 @@ keyForm.addEventListener('submit', async (event) => {
       });
     }
 
-    // Obter ou criar chave mestre de descriptografia (uma única chave para todos os exames)
-    const masterDecryptionKey = await getOrCreateMasterKey(wallet.address);
-
+    // Chave mestra é global e vem do .env - médico busca do backend
     const masterKey = {
       patient: wallet.address,
       doctor: doctorAddress,
       expiry: accessKeys[0].expiry,
       expiryDate: accessKeys[0].expiryDate,
-      records: accessKeys,
-      decryptionKey: masterDecryptionKey // Incluir chave mestre na chave de acesso
+      records: accessKeys
+      // Não incluir decryptionKey - médico busca do backend via /config
     };
 
     const encodedKey = encodeAccessKey(masterKey);
@@ -378,12 +387,14 @@ async function loadHistory() {
 async function renderHistory(records) {
   historyContainer.innerHTML = '<p class="note">Carregando registros e arquivos...</p>';
   
-  // Obter chave mestre do paciente
-  const masterKey = await getOrCreateMasterKey(wallet.address);
-  console.log('Chave mestre obtida:', masterKey ? 'Sim' : 'Não', masterKey ? `${masterKey.substring(0, 16)}...` : '');
-  
-  if (!masterKey) {
-    historyContainer.innerHTML = '<div class="card"><p class="note error">Erro: Não foi possível obter a chave mestre de descriptografia.</p></div>';
+  // Obter chave mestra global do .env
+  const { getMasterKey } = await import('./blockchain.js');
+  let masterKey;
+  try {
+    masterKey = await getMasterKey();
+    console.log('[Master Key] Chave mestra global obtida do backend');
+  } catch (error) {
+    historyContainer.innerHTML = `<div class="card"><p class="note error">Erro: ${error.message}</p></div>`;
     return;
   }
   
@@ -502,32 +513,7 @@ async function renderHistory(records) {
   }
 }
 
-// Gerar chave mestre de descriptografia
-async function generateMasterDecryptionKey() {
-  const key = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt']
-  );
-  const keyRaw = new Uint8Array(await crypto.subtle.exportKey('raw', key));
-  return bufferToHex(keyRaw);
-}
-
-// Obter ou criar chave mestre do paciente
-async function getOrCreateMasterKey(patientAddress) {
-  const masterKeyStorage = JSON.parse(localStorage.getItem('masterDecryptionKeys') || '{}');
-  
-  if (masterKeyStorage[patientAddress]) {
-    return masterKeyStorage[patientAddress];
-  }
-  
-  // Criar nova chave mestre se não existir
-  const newMasterKey = await generateMasterDecryptionKey();
-  masterKeyStorage[patientAddress] = newMasterKey;
-  localStorage.setItem('masterDecryptionKeys', JSON.stringify(masterKeyStorage));
-  
-  return newMasterKey;
-}
+// Chave mestra agora é global do .env - funções removidas
 
 // Funções de criptografia (do script.js)
 async function encryptMetadata(metadataJson) {

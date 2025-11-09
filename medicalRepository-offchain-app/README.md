@@ -86,10 +86,14 @@ A interface web não lê variáveis de ambiente, portanto as credenciais devem f
    PINATA_API_KEY=seu_api_key
    PINATA_SECRET=seu_secret_key
 
-   # Configuração do contrato blockchain (opcional - usa valores padrão se não definido)
-   CONTRACT_ADDRESS=0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053
+   # Configuração do contrato blockchain (obrigatório)
+   CONTRACT_ADDRESS=seu_endereco_do_contrato
    CHAIN_ID=11155111
    NETWORK_NAME=Sepolia
+   
+   # Chave Mestre Global (obrigatório)
+   # Gere com: node generate-master-key.js
+   MASTER_KEY=chave_hex_64_caracteres
    ```
 
 2. No script Node.js, carregue com `require('dotenv').config();`.

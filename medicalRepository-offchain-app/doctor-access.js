@@ -71,6 +71,7 @@ window.addEventListener('load', async () => {
 // Função para desconectar
 function handleDisconnect() {
   console.log('Desconectando carteira...');
+  // Chave mestra agora é global do .env, não precisa preservar
   localStorage.clear();
   window.location.href = 'index.html?disconnected=true';
 }
@@ -147,10 +148,14 @@ accessForm.addEventListener('submit', async (event) => {
       return;
     }
 
-    // Obter chave mestre de descriptografia da chave de acesso
-    const masterDecryptionKey = accessKey.decryptionKey;
-    if (!masterDecryptionKey) {
-      alert('Chave de acesso inválida: chave de descriptografia não encontrada');
+    // Obter chave mestra global do backend (.env)
+    const { getMasterKey } = await import('./blockchain.js');
+    let masterDecryptionKey;
+    try {
+      masterDecryptionKey = await getMasterKey();
+      console.log('[Doctor Access] Chave mestra global obtida do backend');
+    } catch (error) {
+      alert(`Erro ao obter chave mestra: ${error.message}`);
       return;
     }
 

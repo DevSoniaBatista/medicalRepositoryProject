@@ -5,6 +5,7 @@ let CONTRACT_ADDRESS = null;
 let CHAIN_ID = null;
 let NETWORK_NAME = null;
 let NETWORK_CONFIG = null;
+let MASTER_KEY = null;
 
 const CONTRACT_ABI = [
   'function createRecord(address patient, string calldata cidMeta, bytes32 metaHash) external returns (uint256 recordId)',
@@ -70,6 +71,7 @@ async function loadConfig() {
       CONTRACT_ADDRESS = config.contractAddress;
       CHAIN_ID = BigInt(config.chainId);
       NETWORK_NAME = config.networkName;
+      MASTER_KEY = config.masterKey;
       
       // Construir configuração da rede para MetaMask
       const chainIdHex = '0x' + config.chainId.toString(16);
@@ -96,7 +98,8 @@ async function loadConfig() {
       console.log('[Config] Configuração aplicada:', {
         contractAddress: CONTRACT_ADDRESS,
         chainId: CHAIN_ID.toString(),
-        networkName: NETWORK_NAME
+        networkName: NETWORK_NAME,
+        masterKeyConfigured: !!MASTER_KEY
       });
       
       return true;
@@ -148,7 +151,7 @@ async function loadConfig() {
 
 // Função para garantir que a configuração está carregada
 async function ensureConfigLoaded() {
-  if (!CONTRACT_ADDRESS || !CHAIN_ID) {
+  if (!CONTRACT_ADDRESS || !CHAIN_ID || !MASTER_KEY) {
     const loaded = await loadConfig();
     if (!loaded) {
       // NÃO usar valores padrão - FORÇAR configuração do .env
@@ -157,13 +160,23 @@ async function ensureConfigLoaded() {
         'Configure o arquivo .env com:\n' +
         '  CONTRACT_ADDRESS=seu_endereco_aqui\n' +
         '  CHAIN_ID=11155111\n' +
-        '  NETWORK_NAME=Sepolia\n\n' +
+        '  NETWORK_NAME=Sepolia\n' +
+        '  MASTER_KEY=chave_hex_64_caracteres\n\n' +
         'E certifique-se de que o backend está rodando (npm run api)';
       
       console.error('[Config]', errorMsg);
       throw new Error(errorMsg);
     }
   }
+}
+
+// Obter chave mestra global
+export async function getMasterKey() {
+  await ensureConfigLoaded();
+  if (!MASTER_KEY) {
+    throw new Error('Chave mestra não configurada. Configure MASTER_KEY no arquivo .env');
+  }
+  return MASTER_KEY;
 }
 
 // Carregar config ao inicializar

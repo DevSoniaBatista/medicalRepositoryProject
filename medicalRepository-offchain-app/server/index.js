@@ -50,30 +50,42 @@ app.get('/config', (_req, res) => {
   const contractAddress = process.env.CONTRACT_ADDRESS;
   const chainId = process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID, 10) : null;
   const networkName = process.env.NETWORK_NAME;
+  const masterKey = process.env.MASTER_KEY;
   
   // Validar se as variáveis obrigatórias estão configuradas
-  if (!contractAddress || !chainId || !networkName) {
+  if (!contractAddress || !chainId || !networkName || !masterKey) {
     console.error('[Backend] ERRO: Variáveis de ambiente não configuradas!');
     console.error('[Backend] Configure no arquivo .env:');
     console.error('  CONTRACT_ADDRESS=' + (contractAddress || 'NÃO DEFINIDO'));
     console.error('  CHAIN_ID=' + (chainId || 'NÃO DEFINIDO'));
     console.error('  NETWORK_NAME=' + (networkName || 'NÃO DEFINIDO'));
+    console.error('  MASTER_KEY=' + (masterKey ? 'DEFINIDO' : 'NÃO DEFINIDO'));
     
     return res.status(500).json({
       error: 'Configuração incompleta',
-      message: 'Configure CONTRACT_ADDRESS, CHAIN_ID e NETWORK_NAME no arquivo .env',
+      message: 'Configure CONTRACT_ADDRESS, CHAIN_ID, NETWORK_NAME e MASTER_KEY no arquivo .env',
       missing: {
         contractAddress: !contractAddress,
         chainId: !chainId,
-        networkName: !networkName
+        networkName: !networkName,
+        masterKey: !masterKey
       }
+    });
+  }
+  
+  // Validar formato da chave mestra (deve ser 64 caracteres hex)
+  if (masterKey.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(masterKey)) {
+    return res.status(500).json({
+      error: 'Chave mestra inválida',
+      message: 'MASTER_KEY deve ser uma string hexadecimal de 64 caracteres (32 bytes)'
     });
   }
   
   const config = {
     contractAddress: contractAddress,
     chainId: chainId,
-    networkName: networkName
+    networkName: networkName,
+    masterKey: masterKey
   };
   
   // Adicionar RPC e Block Explorer se configurados
@@ -88,7 +100,8 @@ app.get('/config', (_req, res) => {
   console.log('[Backend] Configuração retornada do .env:', {
     contractAddress: config.contractAddress,
     chainId: config.chainId,
-    networkName: config.networkName
+    networkName: config.networkName,
+    masterKeyConfigured: true
   });
   
   res.json(config);

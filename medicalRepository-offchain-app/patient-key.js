@@ -75,6 +75,7 @@ window.addEventListener('load', async () => {
 // Função para desconectar
 function handleDisconnect() {
   console.log('Desconectando carteira...');
+  // Chave mestra agora é global do .env, não precisa preservar
   localStorage.clear();
   window.location.href = 'index.html?disconnected=true';
 }

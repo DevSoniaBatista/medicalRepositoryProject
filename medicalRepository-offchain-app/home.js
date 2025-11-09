@@ -70,12 +70,15 @@ async function checkExistingConnection() {
 function handleDisconnect() {
   console.log('Desconectando carteira...');
   
+  // Chave mestra agora é global do .env, não precisa preservar
   // Adicionar flag de desconexão manual antes de limpar
   localStorage.setItem('manualDisconnect', 'true');
   
-  // Limpar todo o localStorage (exceto a flag de desconexão)
+  // Limpar todo o localStorage
   const manualDisconnect = localStorage.getItem('manualDisconnect');
   localStorage.clear();
+  
+  // Restaurar flag de desconexão
   if (manualDisconnect) {
     localStorage.setItem('manualDisconnect', 'true');
   }

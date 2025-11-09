@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+0x<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -100,18 +100,18 @@
             </div>
           </div>
           <div class="card" style="border: 2px solid var(--accent);">
-            <h4>🔑 Chave Mestre de Descriptografia</h4>
-            <pre id="sym-key"></pre>
-            <div class="card-actions">
-              <button data-copy="sym-key" class="primary">Copiar Chave</button>
-            </div>
+            <h4>🔑 Chave Mestre Global</h4>
             <p class="note">
-              <strong>Informação:</strong> Esta é sua chave mestre que descriptografa todos os seus exames.
-              Ela é automaticamente incluída na chave de acesso quando você autoriza um médico.
+              <strong>Informação:</strong> A chave mestra é global e configurada no servidor via arquivo .env. 
+              Todos os registros são criptografados com a mesma chave mestra.
             </p>
             <p class="note">
-              <strong>Importante:</strong> A chave mestre é armazenada localmente no seu navegador e é incluída
-              automaticamente na chave de acesso. Você não precisa compartilhá-la separadamente.
+              <strong>Importante:</strong> O médico não precisa de chave separada. Ele descriptografa os registros 
+              usando a chave mestra global que é obtida automaticamente do servidor quando ele usa a chave de acesso.
+            </p>
+            <p class="note">
+              <strong>Para gerar a chave mestra:</strong> Execute <code>node generate-master-key.js</code> e adicione 
+              <code>MASTER_KEY=...</code> ao arquivo .env do servidor.
             </p>
           </div>
           <div class="card">
