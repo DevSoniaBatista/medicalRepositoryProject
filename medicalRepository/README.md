@@ -154,7 +154,13 @@ forge script script/Upgrade.s.sol \
    );
    ```
    
-   **Note**: Payment of 0.0001 ETH (≈ US$0.43) is required and accumulated in the contract. Admin can withdraw funds using `withdraw()`.
+   **Payment Details**:
+   - **Fee**: 0.0001 ETH (≈ US$0.43) per record creation
+   - **Payment Method**: Must be sent with the transaction (`{value: 0.0001 ether}`)
+   - **Accumulation**: Funds are accumulated in the contract (not transferred immediately)
+   - **Withdrawal**: Admin can withdraw all accumulated funds using `withdraw()`
+   - **Tracking**: Each payment emits a `PaymentReceived` event with payer, amount, recordId, and timestamp
+   - **Statistics**: Admin can query total payments and payments by payer using view functions
 
 ### Granting Consent
 
@@ -182,7 +188,7 @@ forge script script/Upgrade.s.sol \
 
 ### Accessing a Record
 
-1. **Doctor receives encrypted key** (off-chain)
+1. **Doctor receives encrypted key** (off-chain, via QR code or secure channel)
 2. **Decrypt symmetric key** (ECIES):
    ```javascript
    const symKey = decryptECIES(encryptedKey, doctorPrivateKey);
@@ -198,29 +204,45 @@ forge script script/Upgrade.s.sol \
    const metadata = decryptAES256GCM(encrypted, symKey);
    ```
 
-5. **Log access on-chain**:
+5. **Log access on-chain** (for audit trail):
    ```solidity
    medicalRecords.logAccess(recordId, "viewed");
    ```
+   
+   **Note**: The `logAccess()` function emits an `AccessLogged` event that includes both the doctor's address (accessor) and the patient's address, allowing admins to track all record accesses.
 
 ## Admin Functions
 
 ### Payment Management
 
-**Check contract balance:**
+**Get admin address:**
+```solidity
+address admin = medicalRecords.getAdminAddress();
+```
+
+**Get record creation fee:**
+```solidity
+uint256 fee = medicalRecords.getRecordCreationFee(); // Returns 0.0001 ether
+```
+
+**Check contract balance** (accumulated payments):
 ```solidity
 uint256 balance = medicalRecords.getContractBalance();
 ```
 
-**Withdraw accumulated funds** (admin only):
-```solidity
-medicalRecords.withdraw(); // Transfers all accumulated ETH to admin
-```
-
-**View payment statistics:**
+**Get total payments received:**
 ```solidity
 uint256 total = medicalRecords.getTotalPayments();
+```
+
+**Get payments by specific payer:**
+```solidity
 uint256 byPayer = medicalRecords.getPaymentsByPayer(patientAddress);
+```
+
+**Withdraw accumulated funds** (admin only):
+```solidity
+medicalRecords.withdraw(); // Transfers all accumulated ETH to admin address
 ```
 
 ### Emergency Controls
@@ -241,6 +263,42 @@ bool isPaused = medicalRecords.paused();
 ```
 
 **Note**: When paused, `withdraw()` and view functions still work. Only state-changing operations are blocked.
+
+### Admin Event Tracking
+
+The contract emits events that allow admins to track all system activity:
+
+**Payment Events:**
+- `PaymentReceived(payer, recipient, amount, recordId, paymentType, timestamp)` - Emitted when a patient pays the 0.0001 ETH fee to create a record
+- `PaymentWithdrawn(recipient, amount, timestamp)` - Emitted when admin withdraws accumulated funds
+
+**Record Events:**
+- `RecordCreated(id, owner, cidMeta, metaHash, timestamp)` - Emitted when a new medical record is created
+
+**Consent Events:**
+- `ConsentGranted(recordId, patient, doctor, expiry, nonce)` - Emitted when patient grants consent to a doctor
+- `ConsentKeyGenerated(recordId, patient, doctor, nonce, expiry, timestamp)` - Emitted when a consent key is generated (for admin tracking)
+- `ConsentRevoked(recordId, patient, doctor, nonce)` - Emitted when consent is revoked
+
+**Access Events:**
+- `AccessLogged(recordId, accessor, patient, timestamp, action)` - Emitted when a doctor logs access to a record (includes patient address for admin tracking)
+
+**Example: Query all events for admin dashboard:**
+```javascript
+// Get all payment events
+const paymentFilter = contract.filters.PaymentReceived(null, adminAddress);
+const payments = await contract.queryFilter(paymentFilter, fromBlock);
+
+// Get all consent key generations
+const keyFilter = contract.filters.ConsentKeyGenerated();
+const keys = await contract.queryFilter(keyFilter, fromBlock);
+
+// Get all access logs
+const accessFilter = contract.filters.AccessLogged();
+const accesses = await contract.queryFilter(accessFilter, fromBlock);
+```
+
+All events are indexed and can be efficiently queried for comprehensive admin monitoring and analytics.
 
 ## Testing
 
@@ -284,6 +342,7 @@ forge coverage
 - ✅ **Payment security**: Funds accumulated safely, admin-controlled withdrawal
 - ✅ **Emergency controls**: Pause/unpause for security incidents
 - ✅ **Full audit trail**: All payments, consents, and accesses tracked via events
+- ✅ **Admin monitoring**: Complete event system for tracking all system activity (payments, consents, accesses, withdrawals)
 
 ### Recommendations
 

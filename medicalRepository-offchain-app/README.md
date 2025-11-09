@@ -1,23 +1,28 @@
 # Medical Records - Frontend Application
 
-Sistema completo de registros médicos descentralizados com interface web para pacientes e médicos. Utiliza criptografia AES-256-GCM com chave mestra global configurada no servidor.
+Sistema completo de registros médicos descentralizados com interface web para pacientes, médicos e administradores. Utiliza criptografia AES-256-GCM com chave mestra global configurada no servidor e sistema de pagamento integrado.
 
 ## Visão Geral
 
 Este é o frontend do sistema de registros médicos que permite:
-- **Pacientes**: Criar registros médicos, visualizar histórico e compartilhar acesso com médicos
+- **Pacientes**: Criar registros médicos (com pagamento de 0.0001 ETH), visualizar histórico e compartilhar acesso com médicos
 - **Médicos**: Acessar registros médicos com autorização do paciente usando apenas a chave de acesso
+- **Administradores**: Gerenciar o sistema, visualizar estatísticas, retirar fundos e controlar o contrato
 - **Criptografia**: Todos os dados são criptografados com chave mestra global antes de serem enviados ao IPFS
 - **Blockchain**: Metadados e controle de acesso gerenciados via smart contracts na Ethereum
+- **Pagamento**: Sistema integrado de pagamento com taxa de 0.0001 ETH por registro criado
 
 ## Características Principais
 
 - 🔐 **Chave Mestre Global**: Uma única chave configurada no `.env` para todos os registros
 - 🔒 **Criptografia End-to-End**: AES-256-GCM com chave mestra global
+- 💰 **Sistema de Pagamento**: Taxa de 0.0001 ETH (≈ US$0.43) por registro criado
 - 📝 **EIP-712 Consent Management**: Assinaturas criptográficas para autorização
 - 🌐 **IPFS/Pinata**: Armazenamento descentralizado de dados criptografados
-- 👤 **Interface Completa**: Páginas separadas para pacientes e médicos
+- 👤 **Interface Completa**: Páginas separadas para pacientes, médicos e administradores
 - 🔑 **Acesso Simplificado**: Médico só precisa da chave de acesso (chave mestra obtida automaticamente)
+- 📊 **Painel Administrativo**: Dashboard completo com estatísticas, eventos e controles
+- 🔍 **Rastreamento Completo**: Todos os eventos são rastreados para auditoria e transparência
 
 ## Pré-requisitos
 
@@ -120,26 +125,45 @@ O sistema detecta automaticamente o ambiente e ajusta as URLs do backend. Para p
 ### 1. `index.html` - Página Inicial
 - Conecta carteira MetaMask
 - Exibe informações do contrato (endereço, rede, chain ID)
-- Menu de acesso (Paciente ou Médico)
+- Menu de acesso (Paciente, Médico ou Admin)
+- Verificação automática se a carteira é admin
 
 ### 2. `patient.html` - Acesso do Paciente
-- Criar novos exames médicos
-- Visualizar histórico de registros
+- **Criar novos exames médicos** (com pagamento obrigatório de 0.0001 ETH)
+- Visualizar histórico de registros com dados descriptografados
 - Gerar chave de acesso para médicos
-- Upload de arquivos ao IPFS
+- Visualização inline de arquivos (imagens, PDFs)
 
 ### 3. `doctor-access.html` - Acesso do Médico
 - Inserir chave de acesso fornecida pelo paciente
 - Visualizar registros autorizados
 - Descriptografar e exibir dados médicos
+- Visualização inline de arquivos (imagens, PDFs)
+- (Opcional) Registrar acesso para auditoria
 
-### 4. `upload.html` - Upload de Arquivos
+### 4. `admin.html` - Painel Administrativo
+- **Status do Contrato**: Visualizar se está pausado/ativo
+- **Informações de Pagamento**: Saldo acumulado, total de pagamentos, estatísticas
+- **Ações Administrativas**:
+  - Retirar fundos acumulados
+  - Pausar/despausar contrato
+  - Atualizar dados e eventos
+- **Histórico de Eventos**: 
+  - Pagamentos recebidos
+  - Retiradas de fundos
+  - Criações de registros
+  - Consentimentos concedidos
+  - Acessos aos registros
+
+### 5. `upload.html` - Upload de Arquivos
 - Upload de imagens/PDFs ao IPFS/Pinata
 - Geração automática de CIDs
 - Integração com formulário de criação de exames
+- Upload múltiplo de arquivos
 
-### 5. `patient-key.html` - Gerar Chave de Acesso
+### 6. `patient-key.html` - Gerar Chave de Acesso
 - Interface alternativa para geração de chaves de acesso
+- Download da chave como JSON
 
 ## Fluxo de Uso
 
@@ -152,11 +176,19 @@ O sistema detecta automaticamente o ambiente e ajusta as URLs do backend. Para p
    - (Opcional) Faça upload de arquivos em `upload.html`
    - Preencha os dados do exame
    - O sistema criptografa automaticamente com a chave mestra global
+   - **⚠️ Pagamento Obrigatório**: Deve pagar 0.0001 ETH ao criar o registro
+   - Sistema valida saldo suficiente (taxa + gas)
    - Registro é enviado ao IPFS e blockchain
-3. **Compartilhar Acesso**:
+   - Pagamento é acumulado no contrato (admin pode retirar depois)
+3. **Ver Histórico**:
+   - Visualize todos os seus registros
+   - Dados são descriptografados automaticamente
+   - Arquivos são exibidos inline (imagens, PDFs)
+4. **Compartilhar Acesso**:
    - Clique em "Gerar Chave de Acesso"
-   - Informe o endereço do médico e validade
-   - Compartilhe a chave de acesso gerada (o médico não precisa de chave separada)
+   - Informe o endereço do médico e validade (1-365 dias)
+   - Sistema registra consentimento na blockchain
+   - Compartilhe a chave de acesso gerada (já inclui chave mestra)
 
 ### Para Médicos
 
@@ -164,27 +196,62 @@ O sistema detecta automaticamente o ambiente e ajusta as URLs do backend. Para p
 2. **Acessar Registros**:
    - Acesse "Acesso Médico"
    - Cole a chave de acesso fornecida pelo paciente
+   - Sistema valida autorização e expiração
    - O sistema busca automaticamente a chave mestra do backend
    - Registros são descriptografados e exibidos
+   - Arquivos são visualizados inline (imagens, PDFs)
+3. **Registro de Acesso** (Opcional):
+   - Sistema pode registrar acesso via `logAccess()` para auditoria
+   - Admin pode rastrear todos os acessos através de eventos
+
+### Para Administradores
+
+1. **Conectar Carteira Admin**: Acesse `index.html` ou `admin.html` e conecte sua carteira MetaMask
+2. **Verificar Permissões**: Sistema verifica automaticamente se a carteira tem `DEFAULT_ADMIN_ROLE`
+3. **Visualizar Informações**:
+   - Status do contrato (pausado/ativo)
+   - Saldo acumulado no contrato
+   - Total de pagamentos recebidos
+   - Estatísticas por pagador
+   - Histórico completo de eventos
+4. **Ações Administrativas**:
+   - **Retirar Fundos**: Transfere todo o saldo acumulado para endereço do admin
+   - **Pausar Contrato**: Pausa operações em caso de emergência
+   - **Despausar Contrato**: Retoma operações normais
+   - **Atualizar Dados**: Recarrega informações e eventos recentes
 
 ## Arquitetura
 
 ```
 Frontend (Browser)
   ↓
-  Criptografa com MASTER_KEY (do backend)
+  Obtém MASTER_KEY do backend (/config)
+  ↓
+  Criptografa dados com AES-256-GCM
   ↓
 Backend (/upload)
   ↓
 IPFS/Pinata (dados criptografados)
   ↓
-Blockchain (CID + hash)
+Blockchain (CID + hash + pagamento 0.0001 ETH)
+  ↓
+  Eventos: RecordCreated, PaymentReceived
   ↓
 Médico (com chave de acesso)
+  ↓
+  Valida consentimento on-chain
   ↓
 Backend (/config) → MASTER_KEY
   ↓
 Descriptografa registros
+  ↓
+  (Opcional) logAccess() → AccessLogged event
+  ↓
+Admin (Painel)
+  ↓
+  Visualiza eventos e estatísticas
+  ↓
+  Retira fundos acumulados (withdraw)
 ```
 
 ## Endpoints do Backend
@@ -216,32 +283,68 @@ Upload de arquivo ao Pinata:
 Status do serviço:
 - **Retorna**: `{ status: 'ok', time: ISOString }`
 
+## Sistema de Pagamento
+
+### Taxa por Registro
+- **Valor**: 0.0001 ETH por registro criado (≈ US$0.43, variável com câmbio)
+- **Obrigatoriedade**: Pagamento obrigatório ao criar registro via `createRecord()`
+- **Validação**: Contrato valida que `msg.value == 0.0001 ether` (reverte se diferente)
+- **Acumulação**: Fundos ficam acumulados no contrato (não transferidos imediatamente)
+
+### Processo de Pagamento
+1. Sistema obtém taxa de criação do contrato (`getRecordCreationFee()`)
+2. Verifica se contrato está pausado
+3. Verifica saldo suficiente (taxa + gas)
+4. Chama `createRecord()` com pagamento: `{value: 0.0001 ether}`
+5. Contrato valida pagamento e acumula fundos
+6. Emite eventos: `RecordCreated` e `PaymentReceived`
+
+### Retirada de Fundos (Admin)
+- Apenas admin pode retirar fundos acumulados
+- Função `withdraw()` transfere todo o saldo para endereço do admin
+- Emite evento `PaymentWithdrawn` quando fundos são retirados
+
 ## Criptografia
 
 ### Chave Mestre Global
 - **Tipo**: AES-256-GCM
 - **Tamanho**: 32 bytes (64 caracteres hex)
-- **Origem**: Configurada no `.env` do servidor
+- **Origem**: Configurada no `.env` do servidor (`NEXT_PUBLIC_MASTER_KEY`)
 - **Uso**: Todos os registros são criptografados com a mesma chave
+- **Segurança**: Nunca armazenada no navegador ou on-chain
 
 ### Processo de Criptografia
 1. Metadata JSON é criado com dados do exame
-2. Sistema busca chave mestra global do backend
-3. Metadata é criptografado com AES-256-GCM
+2. Sistema busca chave mestra global do backend (`GET /config` ou `GET /api/config`)
+3. Metadata é criptografado com AES-256-GCM (IV único por registro)
 4. Payload criptografado é enviado ao IPFS
-5. CID e hash são registrados na blockchain
+5. CID e hash são registrados na blockchain com pagamento de 0.0001 ETH
 
 ### Processo de Descriptografia
-1. Médico fornece chave de acesso
-2. Sistema valida autorização na blockchain
-3. Sistema busca chave mestra global do backend
+1. Médico fornece chave de acesso (base64)
+2. Sistema valida autorização na blockchain (`getConsent()`)
+3. Sistema extrai chave mestra global da chave de acesso (ou busca do backend)
 4. Dados são descriptografados e exibidos
+5. (Opcional) Sistema registra acesso via `logAccess()` para auditoria
+
+## Eventos de Rastreamento
+
+O sistema emite eventos na blockchain que permitem rastreamento completo:
+
+- **`PaymentReceived`**: Quando paciente paga taxa de 0.0001 ETH
+- **`PaymentWithdrawn`**: Quando admin retira fundos acumulados
+- **`RecordCreated`**: Quando novo registro é criado
+- **`ConsentGranted`**: Quando consentimento é concedido
+- **`ConsentKeyGenerated`**: Quando chave de acesso é gerada (rastreamento admin)
+- **`AccessLogged`**: Quando médico acessa registro (auditoria)
+
+O painel administrativo permite visualizar todos esses eventos e gerar relatórios completos.
 
 ## Documentação Adicional
 
 - [`docs/FUNCIONAMENTO.md`](docs/FUNCIONAMENTO.md) - Documentação completa do funcionamento do sistema
-- [`docs/MASTER_KEY_SETUP.md`](docs/MASTER_KEY_SETUP.md) - Configuração detalhada da chave mestra global
-- [`docs/VERCEL_SETUP.md`](docs/VERCEL_SETUP.md) - Guia de deploy na Vercel
+- [`docs/ENV_VARIABLES.md`](docs/ENV_VARIABLES.md) - Guia completo de variáveis de ambiente
+- [`docs/VERCEL_DEPLOY.md`](docs/VERCEL_DEPLOY.md) - Guia de deploy na Vercel
 - [`docs/PINATA_EXAMPLES.md`](docs/PINATA_EXAMPLES.md) - Exemplos de integração com Pinata
 - [`docs/RESUMO_TECNICO_SMART_CONTRACT.md`](docs/RESUMO_TECNICO_SMART_CONTRACT.md) - Resumo técnico do smart contract
 
@@ -259,6 +362,10 @@ Status do serviço:
 - ✅ **Sem chaves on-chain**: Chaves nunca são armazenadas na blockchain
 - ✅ **Autorização criptográfica**: EIP-712 garante autenticidade das autorizações
 - ✅ **Validação de rede**: Sistema verifica e solicita troca para rede correta
+- ✅ **Validação de pagamento**: Contrato valida valor exato do pagamento
+- ✅ **AccessControl**: Sistema de roles para controle de acesso administrativo
+- ✅ **Pausa de emergência**: Admin pode pausar contrato em caso de vulnerabilidade
+- ✅ **Rastreamento completo**: Todos os eventos são registrados para auditoria
 
 ## Troubleshooting
 
@@ -276,6 +383,19 @@ Status do serviço:
 - Verifique se está usando a mesma chave mestra usada para criptografar
 - Registros criados com chave diferente não podem ser descriptografados
 
+### "Pagamento insuficiente"
+- Certifique-se de ter pelo menos 0.0001 ETH + gas fees na carteira
+- Verifique se o valor enviado é exatamente 0.0001 ETH
+
+### "Contrato está pausado"
+- O admin pausou o contrato temporariamente
+- Apenas funções de visualização funcionam quando pausado
+- Aguarde o admin despausar o contrato
+
+### "Esta carteira não é uma carteira de administrador"
+- Apenas carteiras com `DEFAULT_ADMIN_ROLE` podem acessar o painel admin
+- Verifique se você está usando a carteira correta
+
 ## Estrutura de Arquivos
 
 ```
@@ -283,22 +403,30 @@ medicalRepository-offchain-app/
 ├── index.html              # Página inicial
 ├── patient.html            # Interface do paciente
 ├── doctor-access.html      # Interface do médico
+├── admin.html              # Painel administrativo
 ├── upload.html             # Upload de arquivos
 ├── patient-key.html        # Geração de chave de acesso
 ├── blockchain.js           # Funções de blockchain e configuração
 ├── patient.js              # Lógica do paciente
 ├── doctor-access.js        # Lógica do médico
+├── admin.js                # Lógica do painel admin
 ├── home.js                 # Lógica da página inicial
 ├── upload.js               # Lógica de upload
 ├── generate-master-key.js  # Script para gerar chave mestra
 ├── server/
-│   └── index.js            # Backend (API + Pinata)
+│   └── index.js            # Backend (API + Pinata) - desenvolvimento local
+├── api/                    # Vercel Serverless Functions
+│   ├── config.js           # Endpoint de configuração
+│   ├── upload.js           # Upload de payload
+│   ├── upload-file.js      # Upload de arquivo
+│   └── health.js           # Health check
 ├── docs/                   # Documentação
 │   ├── FUNCIONAMENTO.md
-│   ├── MASTER_KEY_SETUP.md
-│   ├── VERCEL_SETUP.md
+│   ├── ENV_VARIABLES.md
+│   ├── VERCEL_DEPLOY.md
 │   ├── PINATA_EXAMPLES.md
 │   └── RESUMO_TECNICO_SMART_CONTRACT.md
+├── vercel.json             # Configuração Vercel
 └── README.md               # Este arquivo
 ```
 
