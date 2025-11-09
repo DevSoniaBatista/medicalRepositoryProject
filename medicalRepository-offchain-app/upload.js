@@ -159,11 +159,23 @@ async function uploadSingleFile(file) {
     body: payload
   });
 
-  const data = await response.json();
+  let data;
+  try {
+    const text = await response.text();
+    if (text) {
+      data = JSON.parse(text);
+    } else {
+      data = {};
+    }
+  } catch (parseError) {
+    console.error('Erro ao parsear resposta JSON:', parseError);
+    setFeedback(`Erro no servidor: ${response.status} ${response.statusText}`, 'error');
+    throw new Error(`Erro no servidor: ${response.status}. A resposta não é JSON válido.`);
+  }
 
   if (!response.ok) {
     const message = data?.error || 'Falha ao enviar arquivo';
-    const detail = data?.detail ? ` Detalhe: ${JSON.stringify(data.detail)}` : '';
+    const detail = data?.detail ? ` Detalhe: ${data.detail}` : '';
     setFeedback(`${message}.${detail}`, 'error');
     throw new Error(`${message}${detail}`);
   }

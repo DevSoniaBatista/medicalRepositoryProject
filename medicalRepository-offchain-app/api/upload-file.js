@@ -27,7 +27,7 @@ function resolvePinataHeaders() {
   return null;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Permitir CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -54,8 +54,13 @@ export default async function handler(req, res) {
     let fileBuffer = null;
     let fileName = null;
     let fileMimeType = null;
+    let fileProcessed = false;
 
     await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Upload timeout'));
+      }, 60000); // 60 segundos timeout
+
       busboy.on('file', (name, file, info) => {
         const { filename, encoding, mimeType } = info;
         fileName = filename;
@@ -68,21 +73,29 @@ export default async function handler(req, res) {
 
         file.on('end', () => {
           fileBuffer = Buffer.concat(chunks);
+          fileProcessed = true;
+        });
+
+        file.on('error', (err) => {
+          clearTimeout(timeout);
+          reject(err);
         });
       });
 
       busboy.on('finish', () => {
+        clearTimeout(timeout);
         resolve();
       });
 
       busboy.on('error', (err) => {
+        clearTimeout(timeout);
         reject(err);
       });
 
       req.pipe(busboy);
     });
 
-    if (!fileBuffer || !fileName) {
+    if (!fileBuffer || !fileName || !fileProcessed) {
       return res.status(400).json({ error: 'No file provided. Use multipart/form-data with field "file".' });
     }
 
@@ -126,10 +139,28 @@ export default async function handler(req, res) {
       fileName: originalname
     });
   } catch (error) {
-    console.error('[API] File upload failed', error.response?.data || error.message);
+    console.error('[API] File upload failed', error);
+    
+    // Garantir que sempre retornamos JSON
     const status = error.response?.status || 500;
-    const detail = error.response?.data || error.message;
-    return res.status(status).json({ error: 'Failed to pin file', detail });
+    let errorMessage = 'Failed to pin file';
+    let errorDetail = error.message;
+    
+    if (error.response?.data) {
+      if (typeof error.response.data === 'string') {
+        errorDetail = error.response.data;
+      } else if (error.response.data.error) {
+        errorMessage = error.response.data.error;
+        errorDetail = error.response.data.detail || error.response.data.message;
+      } else {
+        errorDetail = JSON.stringify(error.response.data);
+      }
+    }
+    
+    return res.status(status).json({ 
+      error: errorMessage,
+      detail: errorDetail
+    });
   }
 }
 
