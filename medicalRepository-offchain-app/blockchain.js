@@ -151,33 +151,17 @@ async function ensureConfigLoaded() {
   if (!CONTRACT_ADDRESS || !CHAIN_ID) {
     const loaded = await loadConfig();
     if (!loaded) {
-      // Último recurso: usar valores padrão se nada funcionar
-      // AVISO: Isso só deve acontecer se o backend não estiver disponível
-      console.error('[Config] ERRO: Não foi possível carregar configuração do .env!');
-      console.error('[Config] Verifique:');
-      console.error('  1. Se o backend está rodando (npm run api)');
-      console.error('  2. Se o arquivo .env existe e está configurado');
-      console.error('  3. Se as variáveis CONTRACT_ADDRESS, CHAIN_ID, NETWORK_NAME estão definidas');
-      console.error('[Config] Usando valores padrão (Sepolia) como último recurso.');
+      // NÃO usar valores padrão - FORÇAR configuração do .env
+      const errorMsg = 
+        'ERRO: Configuração não disponível!\n\n' +
+        'Configure o arquivo .env com:\n' +
+        '  CONTRACT_ADDRESS=seu_endereco_aqui\n' +
+        '  CHAIN_ID=11155111\n' +
+        '  NETWORK_NAME=Sepolia\n\n' +
+        'E certifique-se de que o backend está rodando (npm run api)';
       
-      CONTRACT_ADDRESS = '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053';
-      CHAIN_ID = 11155111n;
-      NETWORK_NAME = 'Sepolia';
-      
-      NETWORK_CONFIG = {
-        chainId: '0xaa36a7',
-        chainName: 'Sepolia',
-        nativeCurrency: {
-          name: 'Ether',
-          symbol: 'ETH',
-          decimals: 18
-        },
-        rpcUrls: ['https://rpc.sepolia.org'],
-        blockExplorerUrls: ['https://sepolia.etherscan.io']
-      };
-      
-      EIP712_DOMAIN.chainId = 11155111;
-      EIP712_DOMAIN.verifyingContract = CONTRACT_ADDRESS;
+      console.error('[Config]', errorMsg);
+      throw new Error(errorMsg);
     }
   }
 }

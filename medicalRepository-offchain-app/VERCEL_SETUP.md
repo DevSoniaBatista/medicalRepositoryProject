@@ -14,12 +14,14 @@ A Vercel permite injetar variáveis de ambiente no frontend. Configure as seguin
 2. Adicione as seguintes variáveis:
 
 ```
-CONTRACT_ADDRESS=0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053
+CONTRACT_ADDRESS=seu_endereco_do_contrato_aqui
 CHAIN_ID=11155111
 NETWORK_NAME=Sepolia
 RPC_URL=https://rpc.sepolia.org
 BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
 ```
+
+**IMPORTANTE**: Substitua `seu_endereco_do_contrato_aqui` pelo endereço real do seu contrato deployado.
 
 3. Para que essas variáveis sejam acessíveis no frontend, você precisa injetá-las no HTML. Crie um script de build ou use um arquivo de configuração.
 
@@ -30,11 +32,12 @@ Adicione um script antes do fechamento do `</head>` em todos os arquivos HTML:
 ```html
 <script>
   // Injetar variáveis de ambiente do Vercel
-  window.__CONTRACT_ADDRESS__ = '<%= process.env.CONTRACT_ADDRESS || "0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053" %>';
-  window.__CHAIN_ID__ = '<%= process.env.CHAIN_ID || "11155111" %>';
-  window.__NETWORK_NAME__ = '<%= process.env.NETWORK_NAME || "Sepolia" %>';
-  window.__RPC_URL__ = '<%= process.env.RPC_URL || "https://rpc.sepolia.org" %>';
-  window.__BLOCK_EXPLORER_URL__ = '<%= process.env.BLOCK_EXPLORER_URL || "https://sepolia.etherscan.io" %>';
+  // IMPORTANTE: Não use valores padrão hardcoded - sempre use process.env
+  window.__CONTRACT_ADDRESS__ = '<%= process.env.CONTRACT_ADDRESS %>';
+  window.__CHAIN_ID__ = '<%= process.env.CHAIN_ID %>';
+  window.__NETWORK_NAME__ = '<%= process.env.NETWORK_NAME %>';
+  window.__RPC_URL__ = '<%= process.env.RPC_URL %>';
+  window.__BLOCK_EXPLORER_URL__ = '<%= process.env.BLOCK_EXPLORER_URL %>';
 </script>
 ```
 
@@ -54,9 +57,11 @@ Adicione este script no `<head>` de todos os arquivos HTML antes de carregar `bl
 
 ```html
 <script>
-  // Configuração manual para produção
+  // ⚠️ NÃO RECOMENDADO: Configuração manual hardcoded
+  // Use apenas se não conseguir usar o backend ou variáveis de ambiente
+  // IMPORTANTE: Substitua pelo seu endereço de contrato real
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    window.__CONTRACT_ADDRESS__ = '0x600aa9f85Ff66d41649EE02038cF8e9cfC0BF053';
+    window.__CONTRACT_ADDRESS__ = 'SEU_ENDERECO_DO_CONTRATO_AQUI';
     window.__CHAIN_ID__ = 11155111;
     window.__NETWORK_NAME__ = 'Sepolia';
     window.__RPC_URL__ = 'https://rpc.sepolia.org';
@@ -64,6 +69,8 @@ Adicione este script no `<head>` de todos os arquivos HTML antes de carregar `bl
   }
 </script>
 ```
+
+**⚠️ AVISO**: Esta opção não é recomendada. Prefira usar o backend que lê do `.env`.
 
 ## Configuração do Backend na Vercel
 
