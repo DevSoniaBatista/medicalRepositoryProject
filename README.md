@@ -1,5 +1,9 @@
 # Medical Repository Project
 
+DEMO: https://www.loom.com/share/19381fb3bb2b43d3a53bea362b39247a
+
+URL Vercel: https://medical-records-gamma.vercel.app/
+
 A decentralized medical records system that enables patients to control their medical data through blockchain technology. This repository contains two main projects: a blockchain smart contract system and a frontend web application.
 
 ## Overview
