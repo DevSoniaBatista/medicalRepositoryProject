@@ -1,5 +1,9 @@
 # Medical Repository Project
 
+DEMO: https://www.loom.com/share/19381fb3bb2b43d3a53bea362b39247a
+
+URL Vercel: https://medical-records-gamma.vercel.app/
+
 A decentralized medical records system that enables patients to control their medical data through blockchain technology. This repository contains two main projects: a blockchain smart contract system and a frontend web application.
 
 ## Overview
@@ -203,13 +207,12 @@ Each project contains detailed documentation:
 - **Blockchain Project:**
   - [`medicalRepository/README.md`](medicalRepository/README.md) - Setup and usage guide
   - [`medicalRepository/docs/TECHNICAL_DOC.md`](medicalRepository/docs/TECHNICAL_DOC.md) - Technical specifications
-  - [`medicalRepository/docs/BUSINESS_SUMMARY.md`](medicalRepository/docs/BUSINESS_SUMMARY.md) - Business overview
+  - [`deliveryWork/BLOCKCHAIN.md`](deliveryWork/BLOCKCHAIN.md) - Business overview
 
 - **Frontend Project:**
   - [`medicalRepository-offchain-app/README.md`](medicalRepository-offchain-app/README.md) - Setup and usage guide
-  - [`medicalRepository-offchain-app/docs/FUNCIONAMENTO.md`](medicalRepository-offchain-app/docs/FUNCIONAMENTO.md) - Complete system operation details
-  - [`medicalRepository-offchain-app/docs/ENV_VARIABLES.md`](medicalRepository-offchain-app/docs/ENV_VARIABLES.md) - Environment variables guide
-  - [`medicalRepository-offchain-app/docs/VERCEL_DEPLOY.md`](medicalRepository-offchain-app/docs/VERCEL_DEPLOY.md) - Vercel deployment guide
+  - [`deliveryWork/FRONT_END.md`](deliveryWork/FRONT_END.md) - Complete system operation details
+
 
 ## License
 
